@@ -3,10 +3,10 @@ import UIKit
 final class ProductCell: UICollectionViewCell {
     static let reuseIdentifier = "ProductCell"
     private let productImage = RemoteImageView()
-    private let category = CatalogueStyle.label(style: .caption2, color: .secondaryLabel)
+    private let category = CatalogueStyle.label(style: .caption2, color: CatalogueStyle.secondaryText)
     private let title = CatalogueStyle.label(style: .headline)
     private let price = CatalogueStyle.label(style: .title3)
-    private let rating = CatalogueStyle.label(style: .caption1, color: .secondaryLabel)
+    private let rating = CatalogueStyle.label(style: .caption1, color: CatalogueStyle.secondaryText)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -14,7 +14,7 @@ final class ProductCell: UICollectionViewCell {
         contentView.layer.cornerRadius = 22
         contentView.layer.cornerCurve = .continuous
         let imageWell = UIView()
-        imageWell.backgroundColor = .white
+        imageWell.backgroundColor = CatalogueStyle.imageBackground
         imageWell.layer.cornerRadius = 16
         productImage.contentMode = .scaleAspectFit
         productImage.isAccessibilityElement = false

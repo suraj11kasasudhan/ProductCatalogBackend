@@ -102,7 +102,7 @@ Before public distribution, configure the actual bundle ID/signing team, HTTPS b
 
 ## Grid UI and smaller controllers
 
-Browse uses a compositional collection layout: horizontal category chips, a two-column product grid on phones, three columns at widths of 700 points or more, and a single column at accessibility text sizes. All titles wrap. The warm neutral palette and accent adapt to dark mode. Details use a large image panel and a fixed enquiry action; the enquiry form remains keyboard-aware.
+Browse uses a compositional collection layout: horizontal category chips, a two-column product grid on phones, three columns at widths of 700 points or more, and a single column at accessibility text sizes. All titles wrap. The blush pink backgrounds, rose accents, and plum text adapt to a deep rose dark mode. Navigation, tabs, search, cards and form fields use the same palette. Details use a large image panel and a fixed enquiry action; the enquiry form remains keyboard-aware.
 
 `CatalogueView`, `ProductDetailView`, and `EnquiryView` own UIKit layout and rendering. Controllers bind view-model updates, own cancellable tasks, and forward navigation events to `CatalogueScreenFactory`. `CatalogueStyle` contains shared colors and controls. View models own loading, validation and submission state; `NetworkManager` owns transport and decoding, with error translation centralized in `APIError`. No UI framework or networking dependencies were added.
 

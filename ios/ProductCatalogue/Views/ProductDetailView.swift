@@ -9,15 +9,15 @@ final class ProductDetailView: UIView {
     private let category = CatalogueStyle.label(style: .caption1, color: CatalogueStyle.accent)
     private let name = CatalogueStyle.label(style: .title1)
     private let price = CatalogueStyle.label(style: .title2)
-    private let rating = CatalogueStyle.label(style: .subheadline, color: .secondaryLabel)
-    private let descriptionLabel = CatalogueStyle.label(color: .secondaryLabel)
+    private let rating = CatalogueStyle.label(style: .subheadline, color: CatalogueStyle.secondaryText)
+    private let descriptionLabel = CatalogueStyle.label(color: CatalogueStyle.secondaryText)
     private let enquiry = CatalogueStyle.button("Enquire about this product", symbol: "bubble.left.and.bubble.right")
 
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = CatalogueStyle.background
         let imageWell = UIView()
-        imageWell.backgroundColor = .white
+        imageWell.backgroundColor = CatalogueStyle.imageBackground
         imageWell.layer.cornerRadius = 28
         imageWell.addSubview(productImage)
         productImage.pin(to: imageWell, inset: 24)

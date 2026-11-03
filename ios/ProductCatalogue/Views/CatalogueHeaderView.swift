@@ -4,7 +4,7 @@ final class CatalogueHeaderView: UICollectionReusableView {
     static let kind = "CatalogueHeader"
     private let eyebrow = CatalogueStyle.label("THE EVERYDAY EDIT", style: .caption1, color: CatalogueStyle.accent)
     private let title = CatalogueStyle.label(style: .largeTitle)
-    private let subtitle = CatalogueStyle.label(style: .subheadline, color: .secondaryLabel)
+    private let subtitle = CatalogueStyle.label(style: .subheadline, color: CatalogueStyle.secondaryText)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -51,7 +51,7 @@ final class CategoryCell: UICollectionViewCell {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        contentView.backgroundColor = CatalogueStyle.surface
+        contentView.backgroundColor = CatalogueStyle.categoryBackground
         contentView.layer.cornerRadius = 18
         contentView.layer.cornerCurve = .continuous
         contentView.addSubview(label)

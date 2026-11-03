@@ -18,7 +18,7 @@ final class StatusView: UIView {
         heading.adjustsFontForContentSizeCategory = true
         heading.numberOfLines = 0
         heading.textAlignment = .center
-        label.textColor = .secondaryLabel
+        label.textColor = CatalogueStyle.secondaryText
         label.font = .preferredFont(forTextStyle: .body)
         label.adjustsFontForContentSizeCategory = true
         label.textAlignment = .center

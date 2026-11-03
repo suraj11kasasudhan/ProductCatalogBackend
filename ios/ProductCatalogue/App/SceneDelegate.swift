@@ -5,6 +5,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let scene = scene as? UIWindowScene else { return }
+        CatalogueStyle.configureChrome()
         let window = UIWindow(windowScene: scene)
         window.tintColor = CatalogueStyle.accent
         do {
@@ -21,7 +22,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             window.rootViewController = tabs
         } catch {
             let controller = UIViewController()
-            controller.view.backgroundColor = .systemBackground
+            controller.view.backgroundColor = CatalogueStyle.background
             let status = StatusView()
             status.translatesAutoresizingMaskIntoConstraints = false
             controller.view.addSubview(status)

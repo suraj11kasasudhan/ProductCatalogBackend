@@ -36,7 +36,7 @@ final class EnquiryView: UIView {
         let productLabel = CatalogueStyle.label(product.title, style: .title2)
         stack.addArrangedSubview(CatalogueStyle.label("A LITTLE MORE INFORMATION", style: .caption1, color: CatalogueStyle.accent))
         stack.addArrangedSubview(productLabel)
-        stack.addArrangedSubview(CatalogueStyle.label("Tell us what you’d like to know. We’ll pass your enquiry to the team.", style: .subheadline, color: .secondaryLabel))
+        stack.addArrangedSubview(CatalogueStyle.label("Tell us what you’d like to know. We’ll pass your enquiry to the team.", style: .subheadline, color: CatalogueStyle.secondaryText))
         addField(nameField, title: "Name", to: stack)
         nameField.textContentType = .name
         addField(emailField, title: "Email", to: stack)
@@ -48,8 +48,10 @@ final class EnquiryView: UIView {
         phoneField.keyboardType = .phonePad
         phoneField.textContentType = .telephoneNumber
         stack.addArrangedSubview(CatalogueStyle.label("Message", style: .subheadline))
-        messageField.backgroundColor = .secondarySystemGroupedBackground
+        messageField.backgroundColor = CatalogueStyle.imageBackground
         messageField.textContainerInset = UIEdgeInsets(top: 14, left: 10, bottom: 14, right: 10)
+        messageField.textColor = CatalogueStyle.text
+        messageField.tintColor = CatalogueStyle.accent
         messageField.font = .preferredFont(forTextStyle: .body)
         messageField.adjustsFontForContentSizeCategory = true
         messageField.accessibilityLabel = "Message"
@@ -76,7 +78,8 @@ final class EnquiryView: UIView {
     private func addField(_ field: UITextField, title: String, to stack: UIStackView) {
         stack.addArrangedSubview(CatalogueStyle.label(title, style: .subheadline))
         field.borderStyle = .roundedRect
-        field.backgroundColor = CatalogueStyle.surface
+        field.backgroundColor = CatalogueStyle.imageBackground
+        field.textColor = CatalogueStyle.text
         field.font = .preferredFont(forTextStyle: .body)
         field.adjustsFontForContentSizeCategory = true
         field.accessibilityLabel = title

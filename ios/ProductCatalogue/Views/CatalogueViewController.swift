@@ -33,6 +33,8 @@ final class CatalogueViewController: UIViewController, UISearchBarDelegate {
             search.obscuresBackgroundDuringPresentation = false
             search.searchBar.placeholder = "What are you looking for?"
             search.searchBar.delegate = self
+            search.searchBar.searchTextField.backgroundColor = CatalogueStyle.surface
+            search.searchBar.searchTextField.textColor = CatalogueStyle.text
             navigationItem.searchController = search
             navigationItem.hidesSearchBarWhenScrolling = false
             definesPresentationContext = true
