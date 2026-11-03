@@ -3,7 +3,7 @@ import { createServer } from 'node:http';
 import { once } from 'node:events';
 import request from 'supertest';
 import { loadConfig } from '../src/config.js';
-import { FakeStoreProducts } from '../src/adapters/fake-store-products.js';
+import { DummyJSONProducts } from '../src/adapters/dummy-json-products.js';
 import { SmtpMailer } from '../src/adapters/smtp-mailer.js';
 import { CatalogueService } from '../src/services/catalogue-service.js';
 import { EnquiryService } from '../src/services/enquiry-service.js';
@@ -13,17 +13,20 @@ import { createApp } from '../src/app.js';
 const fixture = createServer((_req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.end(
-    JSON.stringify(
-      Array.from({ length: 6 }, (_, index) => ({
+    JSON.stringify({
+      products: Array.from({ length: 6 }, (_, index) => ({
         id: index + 1,
         title: `Cotton shirt ${index + 1}`,
         description: 'Smoke test product',
         category: 'clothing',
-        image: 'https://example.test/shirt.png',
+        thumbnail: 'https://example.test/shirt.png',
         price: 12,
-        rating: { rate: 4.5, count: 10 },
+        rating: 4.5,
+        reviews: [{ rating: 5 }],
       })),
-    ),
+      total: 6,
+      skip: 0,
+    }),
   );
 });
 fixture.listen(0, '127.0.0.1');
@@ -36,7 +39,7 @@ try {
     FEATURED_PRODUCT_IDS: '1,2,3,4,5',
   });
   const catalogue = new CatalogueService(
-    new FakeStoreProducts(`http://127.0.0.1:${address.port}`),
+    new DummyJSONProducts(`http://127.0.0.1:${address.port}`),
     config.FEATURED_PRODUCT_IDS,
   );
   const app = createApp({

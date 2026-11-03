@@ -45,3 +45,7 @@ The current cloud policy blocks Fake Store API. Local HTTP fixtures validate the
 - Search checks title and description independently so a phrase cannot match only by spanning the boundary between fields.
 - TypeScript checks now include tests and the smoke script. Prettier and GitHub Actions enforce the same development checks.
 - Retained the existing product-source/mail-provider architecture; a larger dependency-injection framework or database is not required for this scope.
+
+## DummyJSON migration
+
+The user approved replacing Fake Store after deployed requests received Cloudflare challenges. DummyJSON is now the product source; the public product contract and service behavior remain unchanged. Fetch the complete collection with `limit=0`, reject incomplete collections, map thumbnails to imageUrl and numeric ratings to rating.value. rating.count is the number of supplied review entries. Existing product identities and categories change with the source. Render must update its explicit PRODUCT_API_URL override. Live access from Render remains to be checked after deployment.

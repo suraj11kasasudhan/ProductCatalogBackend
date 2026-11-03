@@ -7,12 +7,16 @@ const upstreamProduct = z.object({
   title: z.string().min(1),
   description: z.string(),
   price: z.number().nonnegative(),
-  image: z.url(),
+  thumbnail: z.url(),
   category: z.string().min(1),
-  rating: z.object({
-    rate: z.number().min(0).max(5),
-    count: z.number().int().nonnegative(),
-  }),
+  rating: z.number().min(0).max(5),
+  reviews: z.array(z.object({ rating: z.number().min(0).max(5) })),
+});
+
+const upstreamCatalogue = z.object({
+  products: z.array(upstreamProduct),
+  total: z.number().int().nonnegative(),
+  skip: z.number().int().nonnegative(),
 });
 
 type Fetcher = (
@@ -25,7 +29,7 @@ type Fetcher = (
   json(): Promise<unknown>;
 }>;
 
-export class FakeStoreProducts implements ProductSource {
+export class DummyJSONProducts implements ProductSource {
   private cache?: { products: Product[]; expiresAt: number };
   private pending?: Promise<Product[]>;
 
@@ -54,7 +58,7 @@ export class FakeStoreProducts implements ProductSource {
     let upstream: Record<string, string | boolean> = {};
     try {
       const response = await this.fetcher(
-        `${this.baseUrl.replace(/\/$/, '')}/products`,
+        `${this.baseUrl.replace(/\/$/, '')}/products?limit=0`,
         { signal: AbortSignal.timeout(5000) },
       );
       status = response.status;
@@ -86,7 +90,11 @@ export class FakeStoreProducts implements ProductSource {
       stage = 'json';
       const payload = await response.json();
       stage = 'schema';
-      const rows = z.array(upstreamProduct).parse(payload);
+      const catalogue = upstreamCatalogue.parse(payload);
+      // Search and category grouping must cover the full upstream catalogue.
+      if (catalogue.skip !== 0 || catalogue.products.length !== catalogue.total)
+        throw new Error('Incomplete upstream catalogue');
+      const rows = catalogue.products;
       stage = 'duplicate_ids';
       if (new Set(rows.map((row) => row.id)).size !== rows.length)
         throw new Error('Duplicate product IDs');
@@ -95,9 +103,9 @@ export class FakeStoreProducts implements ProductSource {
         title: row.title,
         description: row.description,
         price: row.price,
-        imageUrl: row.image,
+        imageUrl: row.thumbnail,
         category: row.category,
-        rating: { value: row.rating.rate, count: row.rating.count },
+        rating: { value: row.rating, count: row.reviews.length },
       }));
       this.cache = { products, expiresAt: this.now() + this.ttlMs };
       return products;

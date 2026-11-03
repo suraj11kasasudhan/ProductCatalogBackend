@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { FakeStoreProducts } from '../src/adapters/fake-store-products.js';
+import { DummyJSONProducts } from '../src/adapters/dummy-json-products.js';
 
 const row = {
   id: 1,
@@ -7,16 +7,23 @@ const row = {
   description: 'Cotton',
   category: 'clothing',
   price: 10,
-  image: 'https://example.test/1.png',
-  rating: { rate: 4, count: 5 },
+  thumbnail: 'https://example.test/1.png',
+  rating: 4,
+  reviews: [{ rating: 5 }, { rating: 3 }],
 };
 
-describe('Fake Store adapter', () => {
+const catalogue = (products = [row]) => ({
+  products,
+  total: products.length,
+  skip: 0,
+});
+
+describe('DummyJSON adapter', () => {
   afterEach(() => vi.restoreAllMocks());
 
   it('logs HTTP status without exposing the upstream body', async () => {
     const log = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const source = new FakeStoreProducts(
+    const source = new DummyJSONProducts(
       'https://example.test',
       100,
       vi.fn().mockResolvedValue({
@@ -44,7 +51,7 @@ describe('Fake Store adapter', () => {
       'content-type': 'text/html; charset=UTF-8',
       'set-cookie': 'private-token',
     });
-    const source = new FakeStoreProducts(
+    const source = new DummyJSONProducts(
       'https://example.test',
       100,
       vi
@@ -64,7 +71,7 @@ describe('Fake Store adapter', () => {
 
   it('does not mistake every Cloudflare 403 for a challenge or log arbitrary header values', async () => {
     const log = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const source = new FakeStoreProducts(
+    const source = new DummyJSONProducts(
       'https://example.test',
       100,
       vi.fn().mockResolvedValue({
@@ -90,7 +97,7 @@ describe('Fake Store adapter', () => {
 
   it('distinguishes timeouts without logging exception messages', async () => {
     const log = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const source = new FakeStoreProducts(
+    const source = new DummyJSONProducts(
       'https://example.test',
       100,
       vi
@@ -105,7 +112,7 @@ describe('Fake Store adapter', () => {
 
   it('logs only allowlisted network codes', async () => {
     const log = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const source = new FakeStoreProducts(
+    const source = new DummyJSONProducts(
       'https://example.test',
       100,
       vi.fn().mockRejectedValue(
@@ -124,8 +131,8 @@ describe('Fake Store adapter', () => {
     let now = 0;
     const fetcher = vi
       .fn()
-      .mockResolvedValue({ ok: true, json: async () => [row] });
-    const source = new FakeStoreProducts(
+      .mockResolvedValue({ ok: true, json: async () => catalogue() });
+    const source = new DummyJSONProducts(
       'https://example.test/',
       100,
       fetcher,
@@ -138,39 +145,76 @@ describe('Fake Store adapter', () => {
         description: 'Cotton',
         category: 'clothing',
         price: 10,
-        imageUrl: row.image,
-        rating: { value: 4, count: 5 },
+        imageUrl: row.thumbnail,
+        rating: { value: 4, count: 2 },
       },
     ]);
     await source.list();
     expect(fetcher).toHaveBeenCalledTimes(1);
-    expect(fetcher).toHaveBeenCalledWith('https://example.test/products', {
-      signal: expect.any(AbortSignal),
-    });
+    expect(fetcher).toHaveBeenCalledWith(
+      'https://example.test/products?limit=0',
+      {
+        signal: expect.any(AbortSignal),
+      },
+    );
     now = 100;
     await source.list();
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
+  it.each([
+    { products: [row], total: 2, skip: 0 },
+    { products: [row], total: 1, skip: 1 },
+    { products: [row] },
+    [row],
+  ])('rejects incomplete or incompatible catalogues', async (payload) => {
+    const source = new DummyJSONProducts(
+      'https://example.test',
+      100,
+      vi.fn().mockResolvedValue({ ok: true, json: async () => payload }),
+    );
+    await expect(source.list()).rejects.toMatchObject({
+      code: 'PRODUCT_SOURCE_UNAVAILABLE',
+    });
+  });
+
+  it('maps products with no supplied reviews without inventing a count', async () => {
+    const source = new DummyJSONProducts(
+      'https://example.test',
+      100,
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => catalogue([{ ...row, reviews: [] }]),
+      }),
+    );
+    expect((await source.list())[0]?.rating).toEqual({ value: 4, count: 0 });
+  });
+
   it('coalesces simultaneous requests', async () => {
     const fetcher = vi
       .fn()
-      .mockResolvedValue({ ok: true, json: async () => [row] });
-    const source = new FakeStoreProducts('https://example.test', 100, fetcher);
+      .mockResolvedValue({ ok: true, json: async () => catalogue() });
+    const source = new DummyJSONProducts('https://example.test', 100, fetcher);
     await Promise.all([source.list(), source.list(), source.list()]);
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
   it.each([
     { ok: false, json: async () => [] },
-    { ok: true, json: async () => [{ ...row, price: 'wrong' }] },
-    { ok: true, json: async () => [row, row] },
+    {
+      ok: true,
+      json: async () => ({
+        ...catalogue(),
+        products: [{ ...row, price: 'wrong' }],
+      }),
+    },
+    { ok: true, json: async () => catalogue([row, row]) },
   ])(
     'rejects upstream HTTP and schema failures without caching them',
     async (response) => {
       const fetcher = vi
         .fn()
         .mockResolvedValueOnce(response)
-        .mockResolvedValueOnce({ ok: true, json: async () => [row] });
-      const source = new FakeStoreProducts(
+        .mockResolvedValueOnce({ ok: true, json: async () => catalogue() });
+      const source = new DummyJSONProducts(
         'https://example.test',
         100,
         fetcher,
@@ -183,7 +227,7 @@ describe('Fake Store adapter', () => {
     },
   );
   it('handles a timeout without leaking upstream details', async () => {
-    const source = new FakeStoreProducts(
+    const source = new DummyJSONProducts(
       'https://example.test',
       100,
       vi.fn().mockRejectedValue(new DOMException('secret URL', 'TimeoutError')),

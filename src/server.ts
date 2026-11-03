@@ -1,6 +1,6 @@
 import { EnvHttpProxyAgent, fetch as proxyFetch } from 'undici';
 import { loadConfig } from './config.js';
-import { FakeStoreProducts } from './adapters/fake-store-products.js';
+import { DummyJSONProducts } from './adapters/dummy-json-products.js';
 import { SmtpMailer } from './adapters/smtp-mailer.js';
 import { CatalogueService } from './services/catalogue-service.js';
 import { EnquiryService } from './services/enquiry-service.js';
@@ -8,7 +8,7 @@ import { createApp } from './app.js';
 
 const config = loadConfig();
 const dispatcher = new EnvHttpProxyAgent();
-const source = new FakeStoreProducts(
+const source = new DummyJSONProducts(
   config.PRODUCT_API_URL,
   config.CACHE_TTL_MS,
   (url, init) => proxyFetch(url, { ...init, dispatcher }),

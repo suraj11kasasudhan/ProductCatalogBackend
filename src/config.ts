@@ -9,7 +9,7 @@ const configSchema = z
     PRODUCT_API_URL: z
       .url()
       .refine((value) => ['http:', 'https:'].includes(new URL(value).protocol))
-      .default('https://fakestoreapi.com'),
+      .default('https://dummyjson.com'),
     FEATURED_PRODUCT_IDS: z
       .string()
       .default('1,2,3,4,5')

@@ -37,20 +37,20 @@ npm run dev
 Defaults work without `.env`. Copy `.env.example` to `.env` to customize. For local SMTP, start `docker compose up -d mailpit` in another terminal.
 
 ```sh
-npm run check # formatting, typecheck (including tests/scripts), and 35 tests
+npm run check # formatting, typecheck (including tests/scripts), and 46 tests
 npm test
 npm run build
 npm start
 ```
 
-`npm test` runs 35 deterministic tests without Internet access or SMTP. To test actual SMTP delivery:
+`npm test` runs 46 deterministic tests without Internet access or SMTP. To test actual SMTP delivery:
 
 ```sh
 docker compose up -d mailpit
 npm run smoke
 ```
 
-The smoke test uses a temporary local HTTP product source and the real SMTP adapter, then checks the received message's body, recipient and reply-to address through Mailpit's API. It does not validate live Fake Store availability. `MAILPIT_URL` overrides its default `http://127.0.0.1:8025` inbox API.
+The smoke test uses a temporary local HTTP product source and the real SMTP adapter, then checks the received message's body, recipient and reply-to address through Mailpit's API. It does not validate live DummyJSON availability. `MAILPIT_URL` overrides its default `http://127.0.0.1:8025` inbox API.
 
 Formatting is standardized with Prettier: `npm run format` applies it and `npm run format:check` verifies it. GitHub Actions runs the same checks and the build for pull requests into main. The workflow has been added; its remote execution must be checked in the PR.
 
@@ -68,7 +68,7 @@ Formatting is standardized with Prettier: `npm run format` applies it and `npm r
 
 URL-encode category names in paths. Unknown category pages and product IDs return 404. Empty searches return all products; no matches return an empty list. Search matches title or description, case-insensitively. A category query with no matching products returns an empty list.
 
-A product has `id`, `title`, `description`, `price`, `imageUrl`, `category`, and `rating: { value, count }`. Price is the source's numeric amount; currency conversion is outside scope. Clients should render strings as text and use the backend API base URL rather than Fake Store endpoints.
+A product has `id`, `title`, `description`, `price`, `imageUrl`, `category`, and `rating: { value, count }`. Price is the source's numeric amount; currency conversion is outside scope. Clients should render strings as text and use the backend API base URL rather than DummyJSON endpoints.
 
 Enquiries accept `productId` (positive integer), `name` (1–100 characters), `email`, `message` (1–5000 characters), and optional `phone` (3–30 characters). Unknown fields are rejected. Contact details are trimmed. Recipients and email subject are controlled by the server.
 
@@ -81,7 +81,7 @@ See `.env.example`. Server startup validates configuration. Never commit `.env` 
 | Variable                   | Default / meaning                                                          |
 | -------------------------- | -------------------------------------------------------------------------- |
 | `PORT`                     | `3000`                                                                     |
-| `PRODUCT_API_URL`          | `https://fakestoreapi.com`; adapter appends `/products`                    |
+| `PRODUCT_API_URL`          | `https://dummyjson.com`; adapter appends `/products?limit=0`               |
 | `FEATURED_PRODUCT_IDS`     | `1,2,3,4,5`; five distinct positive IDs                                    |
 | `CACHE_TTL_MS`             | `60000`; process-local product cache, `0` disables retention               |
 | `CORS_ORIGIN`              | `http://localhost:5173`; intended React dev origin                         |
@@ -94,7 +94,7 @@ Compose deliberately configures local Mailpit. For a real sales inbox, run the b
 
 ## Structure and boundaries
 
-`routes` validate HTTP input using shared schemas in `routes/schemas.ts`; `services` implement catalogue/enquiry behavior; `adapters` contain Fake Store and SMTP details; `contracts` define the internal product and mail interfaces. `app.ts` is dependency-injected for testing; `server.ts` wires production dependencies and handles shutdown.
+`routes` validate HTTP input using shared schemas in `routes/schemas.ts`; `services` implement catalogue/enquiry behavior; `adapters` contain DummyJSON and SMTP details; `contracts` define the internal product and mail interfaces. `app.ts` is dependency-injected for testing; `server.ts` wires production dependencies and handles shutdown.
 
 The catalogue has a five-second source timeout, validated upstream responses, a short cache, and coalesced concurrent loads. Expired cache entries are not served on failure. Email connections and sends have timeouts. Helmet, a 16 KB JSON body limit, and a process-local enquiry limit (10 requests per IP per 15 minutes) provide basic safeguards.
 
@@ -105,3 +105,11 @@ Express does not trust proxy headers by default. When deploying behind a known A
 TypeScript build/typecheck and all 35 tests passed. The Docker image built with TLS verification enabled; API health and real Mailpit delivery passed. Live Fake Store calls returned a cloud proxy policy denial, surfaced by the API as 502. An allowlist addition for `fakestoreapi.com` was saved in the environment draft; live-source behavior remains unverified until access is enabled. No fake catalogue is used as a production fallback.
 
 See [DECISIONS.md](DECISIONS.md), [AI_USAGE.md](AI_USAGE.md), and [PLAN.md](PLAN.md) for scope, reasoning and work history.
+
+## Render migration from Fake Store
+
+This branch now uses DummyJSON because Fake Store returned Cloudflare browser challenges to the deployed backend. In Render → Environment, change the existing `PRODUCT_API_URL` to `https://dummyjson.com` (without `/products`), save and redeploy. Existing environment overrides take precedence over the new default. No iOS endpoint or response-schema change is required. Verify `/api/products/featured`, `/api/categories`, `/api/products?q=mascara`, and a product detail after deployment. Health alone does not verify upstream access.
+
+The adapter requests `/products?limit=0` to load all products for local search and category grouping. DummyJSON supplies a numeric rating; the returned `rating.count` counts the review entries supplied with each product. Featured IDs 1–5 remain the default; product identities, categories and content change with the provider. SMTP configuration is independent and still required for enquiries.
+
+The source change is validated by deterministic tests; live DummyJSON access from Render must still be verified after deployment. Historical validation notes above describe earlier sessions, not proof of the new provider's availability.
