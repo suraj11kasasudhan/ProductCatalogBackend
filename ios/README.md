@@ -2,6 +2,8 @@
 
 An iPhone/iPad client for the Node backend in the separate backend PR (`feat/catalogue-backend`). This frontend branch is based directly on `main` and intentionally contains no Node implementation. Minimum iOS 16; use Xcode 16 or later on macOS. UIKit screens are built programmatically, with no storyboards or third-party iOS dependencies.
 
+See [the project overview](../README.md) and [iOS pull request #2](https://github.com/suraj11kasasudhan/ProductCatalogBackend/pull/2) for the feature summary and review discussion.
+
 ## Run on your Mac
 
 1. Extract the complete repository ZIP and open `ios/ProductCatalogue.xcodeproj` in Xcode 16 or later.
@@ -43,7 +45,7 @@ Native URLSession requests are not governed by browser CORS rules; no CORS wildc
 - **Search:** submits title/description search when the keyboard Search button is tapped; handles no results and network errors.
 - **Details:** fetches complete product details by ID and displays its image, rating, category, numeric price and description.
 - **Enquiry:** name, email, optional phone and message; local validation for convenience, backend validation remains authoritative. Sending disables duplicate taps. Success appears only after the backend confirms SMTP acceptance. Failure keeps the form available for retry.
-- Uses system colors, Dynamic Type, accessible field labels, image placeholders, cancellable loading, and keyboard-aware form scrolling.
+- Uses a blush pink/rose palette with dark-mode support, Dynamic Type, accessible field labels, image placeholders, cancellable loading, and keyboard-aware form scrolling.
 
 ```text
 App/          lifecycle, dependency composition, and screen navigation factory
