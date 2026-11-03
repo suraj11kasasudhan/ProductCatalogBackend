@@ -33,11 +33,3 @@ Timing is approximate active assistant execution, excluding earlier cloud provis
 The user requested a full code review/refactor and remaining improvement advice. The assistant reviewed the source, tests, configuration and local tooling, corrected error classification, centralized validation, clarified type boundaries, added SMTP recipient tests, and introduced formatting and PR checks. The original 27 tests were expanded to 35. No additional agents were used.
 
 The original error handler treated any SyntaxError as a malformed client request. A regression test now confirms an internal source SyntaxError remains a 500 without leaking details. Additional tests verify unsupported request encodings and SMTP recipient rejection. The follow-up also strengthened smoke assertions and included tests/scripts in typechecking.
-
-## Swift UIKit + MVVM follow-up
-
-The user requested a native Swift/UIKit MVVM frontend and asked whether deployment was required. The assistant added an iOS app in ios/, using the existing backend contract, URLSession and dependency-injected view models. It wrote a checked-in Xcode project with a deterministic Python generator to avoid requiring an external project-generation tool on the reviewer's Mac.
-
-The implementation includes browse/category/search/detail/enquiry screens and 14 XCTest methods. A syntax parser and Xcode-project parser were used as preliminary Linux checks. These do not typecheck against UIKit or execute XCTest. A macOS simulator CI job was added; its result and manual UI review must be checked separately. No parallel agents or image-generation tools were used.
-
-Assumptions: simulator development uses a backend running on the same Mac; physical-device development uses a reachable LAN backend; shared or release use requires HTTPS. The submitter must add actual macOS testing and review time to their time record and own the generated code before submission.

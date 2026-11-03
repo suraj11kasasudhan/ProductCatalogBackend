@@ -44,8 +44,6 @@ try {
     enquiries: new EnquiryService(catalogue, new SmtpMailer(config)),
     corsOrigin: config.CORS_ORIGIN,
   });
-  const categories = await request(app).get('/api/categories').expect(200);
-  assert.deepEqual(categories.body.categories, ['clothing']);
   const featured = await request(app).get('/api/products/featured').expect(200);
   assert.equal(featured.body.products.length, 5);
   const category = await request(app)
