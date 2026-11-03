@@ -20,7 +20,10 @@ final class ProductDetailViewController: UIViewController {
         super.viewDidLoad()
         title = "Product details"
         navigationItem.largeTitleDisplayMode = .never
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = .systemGroupedBackground
+        productImage.backgroundColor = .white
+        productImage.layer.cornerRadius = 24
+        productImage.clipsToBounds = true
         productImage.heightAnchor.constraint(equalToConstant: 240).isActive = true
         stack.axis = .vertical
         stack.spacing = 20
@@ -75,6 +78,8 @@ final class ProductDetailViewController: UIViewController {
             stack.addArrangedSubview(label(product.description, style: .body))
             let button = UIButton(type: .system)
             button.configuration = .filled()
+            button.configuration?.cornerStyle = .capsule
+            button.heightAnchor.constraint(greaterThanOrEqualToConstant: 52).isActive = true
             button.setTitle("Enquire about this product", for: .normal)
             button.addTarget(self, action: #selector(enquire), for: .touchUpInside)
             stack.addArrangedSubview(button)

@@ -20,8 +20,9 @@ final class NetworkManager: NetworkManaging {
             self.session = session
         } else {
             let configuration = URLSessionConfiguration.default
-            configuration.timeoutIntervalForRequest = 15
-            configuration.timeoutIntervalForResource = 30
+            // Allow the hosted free-tier service time to wake after inactivity.
+            configuration.timeoutIntervalForRequest = 75
+            configuration.timeoutIntervalForResource = 90
             self.session = URLSession(configuration: configuration)
         }
     }
@@ -35,6 +36,13 @@ final class NetworkManager: NetworkManaging {
             (data, response) = try await session.data(for: request)
         } catch {
             if Task.isCancelled || (error as? URLError)?.code == .cancelled { throw CancellationError() }
+            #if DEBUG
+            if let host = baseURL.host, ["localhost", "127.0.0.1", "::1"].contains(host),
+               let urlError = error as? URLError,
+               [.cannotConnectToHost, .cannotFindHost, .timedOut].contains(urlError.code) {
+                throw APIError.connectionFailed("The local catalogue server is not responding. Start the backend on the same Mac as your simulator, then tap Try again. On a physical iPhone, configure your Mac’s LAN address instead of localhost.")
+            }
+            #endif
             throw APIError.unavailable
         }
         guard let http = response as? HTTPURLResponse else { throw APIError.invalidResponse }

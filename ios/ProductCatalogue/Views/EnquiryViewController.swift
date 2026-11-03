@@ -21,7 +21,7 @@ final class EnquiryViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Product enquiry"
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = .systemGroupedBackground
         navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .cancel, target: self, action: #selector(close))
         let scroll = UIScrollView()
         scroll.keyboardDismissMode = .interactive
@@ -60,6 +60,8 @@ final class EnquiryViewController: UIViewController {
         phoneField.keyboardType = .phonePad
         phoneField.textContentType = .telephoneNumber
         stack.addArrangedSubview(fieldLabel("Message"))
+        messageField.backgroundColor = .secondarySystemGroupedBackground
+        messageField.textContainerInset = UIEdgeInsets(top: 14, left: 10, bottom: 14, right: 10)
         messageField.font = .preferredFont(forTextStyle: .body)
         messageField.adjustsFontForContentSizeCategory = true
         messageField.accessibilityLabel = "Message"
@@ -76,6 +78,8 @@ final class EnquiryViewController: UIViewController {
         spinner.accessibilityLabel = "Sending enquiry"
         stack.addArrangedSubview(spinner)
         submitButton.configuration = .filled()
+        submitButton.configuration?.cornerStyle = .capsule
+        submitButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 52).isActive = true
         submitButton.setTitle("Send enquiry", for: .normal)
         submitButton.addTarget(self, action: #selector(submit), for: .touchUpInside)
         stack.addArrangedSubview(submitButton)

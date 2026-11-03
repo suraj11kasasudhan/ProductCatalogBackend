@@ -20,6 +20,9 @@ final class CatalogueViewController: UITableViewController, UISearchBarDelegate 
         super.viewDidLoad()
         title = viewModel.mode.title
         navigationController?.navigationBar.prefersLargeTitles = true
+        tableView.backgroundColor = .systemGroupedBackground
+        tableView.separatorStyle = .none
+        tableView.cellLayoutMarginsFollowReadableWidth = true
         tableView.register(ProductCell.self, forCellReuseIdentifier: ProductCell.reuseIdentifier)
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 110
@@ -37,7 +40,41 @@ final class CatalogueViewController: UITableViewController, UISearchBarDelegate 
             navigationItem.hidesSearchBarWhenScrolling = false
             definesPresentationContext = true
         }
+        configureHeader()
         reload()
+    }
+
+    private func configureHeader() {
+        let heading = UILabel()
+        heading.text = viewModel.mode.isSearch ? "Find something you’ll love" : "Discover something new"
+        heading.font = .preferredFont(forTextStyle: .title1)
+        heading.adjustsFontForContentSizeCategory = true
+        heading.numberOfLines = 0
+        let subtitle = UILabel()
+        subtitle.text = "Thoughtful finds. All the details. One simple enquiry."
+        subtitle.font = .preferredFont(forTextStyle: .subheadline)
+        subtitle.textColor = .secondaryLabel
+        subtitle.adjustsFontForContentSizeCategory = true
+        subtitle.numberOfLines = 0
+        let stack = UIStackView(arrangedSubviews: [heading, subtitle])
+        stack.axis = .vertical
+        stack.spacing = 10
+        stack.isLayoutMarginsRelativeArrangement = true
+        stack.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 12, leading: 20, bottom: 24, trailing: 20)
+        tableView.tableHeaderView = stack
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        guard let header = tableView.tableHeaderView else { return }
+        let size = header.systemLayoutSizeFitting(
+            CGSize(width: tableView.bounds.width, height: 0),
+            withHorizontalFittingPriority: .required,
+            verticalFittingPriority: .fittingSizeLevel)
+        if header.frame.size != size {
+            header.frame.size = size
+            tableView.tableHeaderView = header
+        }
     }
 
     private func reload() {

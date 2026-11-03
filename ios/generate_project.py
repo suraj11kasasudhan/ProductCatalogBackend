@@ -95,7 +95,7 @@ for configuration in ("Debug", "Release"):
         "SUPPORTED_PLATFORMS": "iphoneos iphonesimulator", "SUPPORTS_MACCATALYST": "NO",
         "INFOPLIST_FILE": f"ProductCatalogue/Info-{configuration}.plist",
         "GENERATE_INFOPLIST_FILE": "NO",
-        "CATALOGUE_API_BASE_URL": "http://localhost:3000/api" if debug else "https://api.example.invalid/api",
+        "CATALOGUE_API_BASE_URL": "https://productcatalogbackend-1.onrender.com/api",
         "LD_RUNPATH_SEARCH_PATHS": ["$(inherited)", "@executable_path/Frameworks"],
     }))
     test_configs.append(add("test:" + configuration, "XCBuildConfiguration", name=configuration, buildSettings={

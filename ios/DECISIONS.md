@@ -14,3 +14,7 @@
 Swift syntax, Xcode project references, scheme XML, Info.plists and repeatable project generation were checked in Linux. This does not establish UIKit compilation or runtime correctness. The 14 XCTest methods and simulator UI walkthrough still require macOS/CI. The dedicated iOS workflow is included; inspect its result in the PR.
 
 Before submission, build/run in Xcode, test home/category/search/detail/enquiry against the backend, inspect the actual message in Mailpit, and check keyboard behavior, dark mode, larger text and VoiceOver. Before distribution, configure signing, bundle ID, app icon and the real HTTPS backend.
+
+## Hosted backend and UI update
+
+Both build configurations now use https://productcatalogbackend-1.onrender.com/api by default. The backend has migrated to DummyJSON while preserving the client contract. Debug scheme overrides remain available for local development. API timeouts allow the free hosted service to wake after inactivity; no automatic enquiry retries are introduced. Product rows use image cards, category labels and separate price/rating text, with refreshed headers, status screens and form styling. These UI changes still require Xcode build and simulator review.

@@ -4,51 +4,76 @@ final class ProductCell: UITableViewCell {
     static let reuseIdentifier = "ProductCell"
     private let productImage = RemoteImageView()
     private let title = UILabel()
-    private let subtitle = UILabel()
+    private let category = UILabel()
+    private let price = UILabel()
+    private let rating = UILabel()
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
-        accessoryType = .disclosureIndicator
+        backgroundColor = .clear
+        let card = UIView()
+        card.backgroundColor = .secondarySystemGroupedBackground
+        card.layer.cornerRadius = 20
+        card.layer.cornerCurve = .continuous
+        card.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(card)
+        let imageContainer = UIView()
+        imageContainer.backgroundColor = .white
+        imageContainer.layer.cornerRadius = 14
         productImage.contentMode = .scaleAspectFit
         productImage.isAccessibilityElement = false
         productImage.translatesAutoresizingMaskIntoConstraints = false
-        title.font = .preferredFont(forTextStyle: .headline)
-        title.numberOfLines = 0
-        title.adjustsFontForContentSizeCategory = true
-        subtitle.font = .preferredFont(forTextStyle: .subheadline)
-        subtitle.textColor = .secondaryLabel
-        subtitle.numberOfLines = 0
-        subtitle.adjustsFontForContentSizeCategory = true
-        let text = UIStackView(arrangedSubviews: [title, subtitle])
+        imageContainer.addSubview(productImage)
+        configure(title, style: .headline, color: .label)
+        configure(category, style: .caption1, color: .secondaryLabel)
+        configure(price, style: .title3, color: .label)
+        configure(rating, style: .subheadline, color: .secondaryLabel)
+        let text = UIStackView(arrangedSubviews: [category, title, price, rating])
         text.axis = .vertical
-        text.spacing = 8
-        let row = UIStackView(arrangedSubviews: [productImage, text])
-        row.spacing = 16
+        text.spacing = 7
+        let row = UIStackView(arrangedSubviews: [imageContainer, text])
+        row.spacing = 18
         row.alignment = .center
         row.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(row)
+        card.addSubview(row)
         NSLayoutConstraint.activate([
-            productImage.widthAnchor.constraint(equalToConstant: 64),
-            productImage.heightAnchor.constraint(equalToConstant: 72),
-            row.leadingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.leadingAnchor),
-            row.trailingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.trailingAnchor),
-            row.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
-            row.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -16),
+            card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            card.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 6),
+            card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -6),
+            imageContainer.widthAnchor.constraint(equalToConstant: 88),
+            imageContainer.heightAnchor.constraint(equalToConstant: 108),
+            productImage.leadingAnchor.constraint(equalTo: imageContainer.leadingAnchor, constant: 10),
+            productImage.trailingAnchor.constraint(equalTo: imageContainer.trailingAnchor, constant: -10),
+            productImage.topAnchor.constraint(equalTo: imageContainer.topAnchor, constant: 10),
+            productImage.bottomAnchor.constraint(equalTo: imageContainer.bottomAnchor, constant: -10),
+            row.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
+            row.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
+            row.topAnchor.constraint(equalTo: card.topAnchor, constant: 18),
+            row.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -18),
         ])
+    }
+
+    private func configure(_ label: UILabel, style: UIFont.TextStyle, color: UIColor) {
+        label.font = .preferredFont(forTextStyle: style)
+        label.textColor = color
+        label.numberOfLines = 0
+        label.adjustsFontForContentSizeCategory = true
     }
 
     required init?(coder: NSCoder) { fatalError("Use programmatic initialization") }
 
     func configure(with product: Product) {
         title.text = product.title
-        subtitle.text = "Price: \(product.displayPrice) · Rating: \(product.rating.value.formatted())/5"
+        category.text = product.category.uppercased()
+        price.text = "Price · \(product.displayPrice)"
+        rating.text = "★ \(product.rating.value.formatted()) · \(product.rating.count) reviews"
         productImage.load(product.imageUrl)
     }
 
     override func prepareForReuse() {
         super.prepareForReuse()
         productImage.load(nil)
-        title.text = nil
-        subtitle.text = nil
+        [title, category, price, rating].forEach { $0.text = nil }
     }
 }

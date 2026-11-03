@@ -4,29 +4,23 @@ An iPhone/iPad client for the Node backend in the separate backend PR (`feat/cat
 
 ## Run on your Mac
 
-1. Until the backend PR is merged into `main`, use a separate checkout for the backend. From this frontend checkout's root:
+1. Extract the complete repository ZIP and open `ios/ProductCatalogue.xcodeproj` in Xcode 16 or later.
+2. Select the **ProductCatalogue** scheme, choose an available iPhone simulator, and press Run.
+3. Browse, search, and open product details. Both Debug and Release default to `https://productcatalogbackend-1.onrender.com/api`; no local backend or API key is needed.
 
-   ```sh
-   git clone --single-branch --branch feat/catalogue-backend https://github.com/suraj11kasasudhan/ProductCatalogBackend.git ../ProductCatalogBackend-service
-   cd ../ProductCatalogBackend-service
-   docker compose up --build
-   ```
+If you previously set `CATALOGUE_API_BASE_URL` in Scheme → Run → Arguments → Environment Variables, remove it or update it to the hosted address. Debug environment overrides take precedence over the project's default. Stop and run the app again after changing the scheme.
 
-   If that sibling directory already exists, reuse it after checking it is the backend checkout. After the backend PR merges, a checkout of `main` can run the same backend commands instead. No worktree is required.
+The free hosted service may need around a minute to wake after inactivity. API requests allow 75 seconds, with a 90-second resource limit. Image requests remain separate. If the first load fails, tap Try again. Product data comes through the backend, now backed by DummyJSON.
 
-2. In another terminal, return to this frontend checkout and open the checked-in project:
+Enquiries require real email-provider configuration on the backend. Browsing working does not establish that email delivery is configured.
 
-   ```sh
-   open ios/ProductCatalogue.xcodeproj
-   ```
+### Optional local backend
 
-3. Select the **ProductCatalogue** scheme, choose an available iPhone simulator, and press Run. Debug builds default to `http://localhost:3000/api`. No signing account is needed for the simulator. Start Docker on the **same Mac**; a server in the Codex cloud workspace is not your Mac's localhost.
-
-Open the local Mailpit inbox on port 8025 to inspect submitted enquiries. The local setup captures messages without delivering externally. If catalogue requests fail, check the backend terminal and verify `curl http://localhost:3000/api/products/featured` on your Mac. This requires Internet access from the backend to Fake Store API.
+To develop the backend locally, use a separate checkout of `feat/catalogue-backend`, run `docker compose up --build` on the same Mac, and set the Debug scheme's `CATALOGUE_API_BASE_URL` to `http://localhost:3000/api`. Docker's Mailpit inbox is available on port 8025 for local enquiry testing.
 
 ## Do I need to deploy the backend?
 
-No deployment is needed for local simulator development. For other cases:
+The hosted backend is configured by default. If you choose local development:
 
 | Client                                         | Backend address / requirement                                            |
 | ---------------------------------------------- | ------------------------------------------------------------------------ |
@@ -38,7 +32,7 @@ For a physical device, run `npm ci && npm run dev` from the backend checkout and
 
 To change the **Debug** API address, use Product → Scheme → Edit Scheme → Run → Arguments → Environment Variables and add `CATALOGUE_API_BASE_URL` with the full address including `/api`. Alternatively, set the target's `CATALOGUE_API_BASE_URL` build setting. Do not add a real secret: there are no client API keys.
 
-Debug Info.plist allows local networking and localhost HTTP only; it does not enable arbitrary insecure Internet requests. HTTP addresses on an unfamiliar network can still be subject to iOS ATS policy. Use HTTPS for a shared test server. Release Info.plist has no HTTP exceptions, ignores environment overrides, and deliberately uses an unusable `.invalid` placeholder until you set a real HTTPS URL in the Release build setting. Release configuration validation rejects that placeholder.
+Debug Info.plist allows local networking and localhost HTTP only; it does not enable arbitrary insecure Internet requests. HTTP addresses on an unfamiliar network can still be subject to iOS ATS policy. Use HTTPS for a shared test server. Release Info.plist has no HTTP exceptions and ignores environment overrides. Both configurations use the hosted HTTPS backend; Release validation still rejects insecure URLs and `.invalid` placeholders.
 
 Native URLSession requests are not governed by browser CORS rules; no CORS wildcard is needed for this app.
 
@@ -62,7 +56,7 @@ Views/        UIKit layout, navigation, reusable cells/status/image views
 
 View models run on the main actor and depend on `CatalogueServing`, not UIKit or a concrete network implementation. Controllers own their view model and loading task; update callbacks capture controllers weakly. Responses from cancelled or superseded loads cannot replace the current screen state. Controllers emit navigation events; CatalogueScreenFactory constructs destinations and injects their view models. CatalogueAPI depends on NetworkManaging, so transport can be replaced independently of the catalogue service.
 
-The app gets **all product metadata from the backend**. Product images are downloaded from the image URLs returned by that backend and cached in memory. No Fake Store product endpoints are called by the app.
+The app gets **all product metadata from the backend**. Product images are downloaded from the image URLs returned by that backend and cached in memory. No DummyJSON product endpoints are called by the app.
 
 The backend does not supply currency information, so the UI labels the numeric price without inventing a currency. There are no account, checkout, or payment screens.
 
@@ -79,7 +73,7 @@ xcodebuild test \
   CODE_SIGNING_ALLOWED=NO
 ```
 
-There are **18 XCTest methods** covering view-model states, search normalization, invalid forms, enquiry success/failure/retry, duplicate prevention, URL/query encoding, backend DTO decoding, HTTP errors and POST payloads. API tests inject URLProtocol responses and require neither Fake Store access nor SMTP. The shared scheme disables parallel test execution because its protocol stub has one shared response handler.
+There are **19 XCTest methods** covering view-model states, search normalization, invalid forms, enquiry success/failure/retry, duplicate prevention, URL/query encoding, backend DTO decoding, HTTP errors and POST payloads. API tests inject URLProtocol responses and require neither Fake Store access nor SMTP. The shared scheme disables parallel test execution because its protocol stub has one shared response handler.
 
 The separate `.github/workflows/ios.yml` GitHub Actions workflow includes a macOS job that selects an available iPhone simulator and runs the same Xcode test target. Inspect the PR result before treating the app as build-verified.
 

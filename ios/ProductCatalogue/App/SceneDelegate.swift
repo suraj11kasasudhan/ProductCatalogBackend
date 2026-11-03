@@ -6,6 +6,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let scene = scene as? UIWindowScene else { return }
         let window = UIWindow(windowScene: scene)
+        window.tintColor = .systemIndigo
         do {
             let api = CatalogueAPI(baseURL: try APIConfiguration.load().baseURL)
             let screens = CatalogueScreenFactory(service: api)

@@ -416,7 +416,7 @@
 				"SUPPORTS_MACCATALYST" = "NO";
 				"INFOPLIST_FILE" = "ProductCatalogue/Info-Debug.plist";
 				"GENERATE_INFOPLIST_FILE" = "NO";
-				"CATALOGUE_API_BASE_URL" = "http://localhost:3000/api";
+				"CATALOGUE_API_BASE_URL" = "https://productcatalogbackend-1.onrender.com/api";
 				"LD_RUNPATH_SEARCH_PATHS" = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -469,7 +469,7 @@
 				"SUPPORTS_MACCATALYST" = "NO";
 				"INFOPLIST_FILE" = "ProductCatalogue/Info-Release.plist";
 				"GENERATE_INFOPLIST_FILE" = "NO";
-				"CATALOGUE_API_BASE_URL" = "https://api.example.invalid/api";
+				"CATALOGUE_API_BASE_URL" = "https://productcatalogbackend-1.onrender.com/api";
 				"LD_RUNPATH_SEARCH_PATHS" = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

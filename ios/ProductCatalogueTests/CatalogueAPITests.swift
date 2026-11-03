@@ -111,6 +111,19 @@ final class CatalogueAPITests: XCTestCase {
         XCTAssertEqual(request.value(forHTTPHeaderField: "Accept"), "application/json")
     }
 
+    #if DEBUG
+    func testLocalConnectionFailureExplainsBackendPrerequisite() async {
+        StubURLProtocol.handler = { _ in throw URLError(.cannotConnectToHost) }
+        do {
+            _ = try await makeAPI().featured()
+            XCTFail("Expected local connection error")
+        } catch APIError.connectionFailed(let message) {
+            XCTAssertTrue(message.contains("Start the backend"))
+            XCTAssertTrue(message.contains("same Mac"))
+        } catch { XCTFail("Unexpected error: \(error)") }
+    }
+    #endif
+
     func testTransportFailureBecomesUnavailable() async {
         StubURLProtocol.handler = { _ in throw URLError(.notConnectedToInternet) }
         do {
