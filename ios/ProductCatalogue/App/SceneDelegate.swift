@@ -8,10 +8,11 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let window = UIWindow(windowScene: scene)
         do {
             let api = CatalogueAPI(baseURL: try APIConfiguration.load().baseURL)
-            let home = CatalogueViewController(viewModel: CatalogueViewModel(mode: .home, api: api), api: api)
+            let screens = CatalogueScreenFactory(service: api)
+            let home = screens.catalogue(mode: .home)
             let browseNavigation = UINavigationController(rootViewController: home)
             browseNavigation.tabBarItem = UITabBarItem(title: "Browse", image: UIImage(systemName: "square.grid.2x2"), tag: 0)
-            let search = CatalogueViewController(viewModel: CatalogueViewModel(mode: .search, api: api), api: api)
+            let search = screens.catalogue(mode: .search)
             let searchNavigation = UINavigationController(rootViewController: search)
             searchNavigation.tabBarItem = UITabBarItem(tabBarSystemItem: .search, tag: 1)
             let tabs = UITabBarController()

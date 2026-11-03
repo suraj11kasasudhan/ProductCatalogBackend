@@ -52,14 +52,15 @@ Native URLSession requests are not governed by browser CORS rules; no CORS wildc
 - Uses system colors, Dynamic Type, accessible field labels, image placeholders, cancellable loading, and keyboard-aware form scrolling.
 
 ```text
-App/          app and scene lifecycle; wires tabs and API dependency
+App/          lifecycle, dependency composition, and screen navigation factory
 Models/       backend product DTO, catalogue groups, enquiry payload
-Networking/   API URL configuration, URLSession requests and HTTP errors
+Networking/   configuration, endpoint definitions, request building, and NetworkManager
+Services/     CatalogueServing contract and CatalogueAPI response mapping
 ViewModels/   screen state, loading, validation, and enquiry submission
 Views/        UIKit layout, navigation, reusable cells/status/image views
 ```
 
-View models run on the main actor and depend on `CatalogueServing`, not UIKit or a concrete network implementation. Controllers own their view model and loading task; update callbacks capture controllers weakly. Responses from cancelled loads cannot replace the current screen state.
+View models run on the main actor and depend on `CatalogueServing`, not UIKit or a concrete network implementation. Controllers own their view model and loading task; update callbacks capture controllers weakly. Responses from cancelled or superseded loads cannot replace the current screen state. Controllers emit navigation events; CatalogueScreenFactory constructs destinations and injects their view models. CatalogueAPI depends on NetworkManaging, so transport can be replaced independently of the catalogue service.
 
 The app gets **all product metadata from the backend**. Product images are downloaded from the image URLs returned by that backend and cached in memory. No Fake Store product endpoints are called by the app.
 
@@ -78,7 +79,7 @@ xcodebuild test \
   CODE_SIGNING_ALLOWED=NO
 ```
 
-There are **14 XCTest methods** covering view-model states, search normalization, invalid forms, enquiry success/failure/retry, duplicate prevention, URL/query encoding, backend DTO decoding, HTTP errors and POST payloads. API tests inject URLProtocol responses and require neither Fake Store access nor SMTP. The shared scheme disables parallel test execution because its protocol stub has one shared response handler.
+There are **18 XCTest methods** covering view-model states, search normalization, invalid forms, enquiry success/failure/retry, duplicate prevention, URL/query encoding, backend DTO decoding, HTTP errors and POST payloads. API tests inject URLProtocol responses and require neither Fake Store access nor SMTP. The shared scheme disables parallel test execution because its protocol stub has one shared response handler.
 
 The separate `.github/workflows/ios.yml` GitHub Actions workflow includes a macOS job that selects an available iPhone simulator and runs the same Xcode test target. Inspect the PR result before treating the app as build-verified.
 

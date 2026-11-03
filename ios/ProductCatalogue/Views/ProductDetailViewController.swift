@@ -2,16 +2,15 @@ import UIKit
 
 final class ProductDetailViewController: UIViewController {
     private let viewModel: ProductDetailViewModel
-    private let api: CatalogueServing
+    var onEnquire: ((Product) -> Void)?
     private let statusView = StatusView()
     private let scroll = UIScrollView()
     private let stack = UIStackView()
     private let productImage = RemoteImageView()
     private var task: Task<Void, Never>?
 
-    init(viewModel: ProductDetailViewModel, api: CatalogueServing) {
+    init(viewModel: ProductDetailViewModel) {
         self.viewModel = viewModel
-        self.api = api
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -93,8 +92,7 @@ final class ProductDetailViewController: UIViewController {
 
     @objc private func enquire() {
         guard case .loaded(let product) = viewModel.state else { return }
-        let controller = EnquiryViewController(viewModel: EnquiryViewModel(product: product, api: api))
-        present(UINavigationController(rootViewController: controller), animated: true)
+        onEnquire?(product)
     }
 
     deinit { task?.cancel() }

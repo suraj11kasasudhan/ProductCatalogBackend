@@ -2,15 +2,15 @@ import UIKit
 
 final class CatalogueViewController: UITableViewController, UISearchBarDelegate {
     private let viewModel: CatalogueViewModel
-    private let api: CatalogueServing
+    var onSelectCategory: ((String) -> Void)?
+    var onSelectProduct: ((Int) -> Void)?
     private let statusView = StatusView()
     private var content = CatalogueContent(categories: [], sections: [])
     private var task: Task<Void, Never>?
     private var query = ""
 
-    init(viewModel: CatalogueViewModel, api: CatalogueServing) {
+    init(viewModel: CatalogueViewModel) {
         self.viewModel = viewModel
-        self.api = api
         super.init(style: .insetGrouped)
     }
 
@@ -104,10 +104,10 @@ final class CatalogueViewController: UITableViewController, UISearchBarDelegate 
         tableView.deselectRow(at: indexPath, animated: true)
         if categorySectionCount == 1 && indexPath.section == 0 {
             let category = content.categories[indexPath.row]
-            navigationController?.pushViewController(CatalogueViewController(viewModel: CatalogueViewModel(mode: .category(category), api: api), api: api), animated: true)
+            onSelectCategory?(category)
         } else {
             let product = content.sections[indexPath.section - categorySectionCount].products[indexPath.row]
-            navigationController?.pushViewController(ProductDetailViewController(viewModel: ProductDetailViewModel(productID: product.id, api: api), api: api), animated: true)
+            onSelectProduct?(product.id)
         }
     }
 

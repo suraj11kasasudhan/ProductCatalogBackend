@@ -104,6 +104,33 @@ final class CatalogueAPITests: XCTestCase {
         XCTAssertEqual(confirmation.message, "Thank you.")
     }
 
+    func testEndpointKeepsReservedCharactersInsideCategorySegment() throws {
+        let endpoint = try CatalogueEndpoint.category("a/b?c#d% &").endpoint()
+        let request = try endpoint.request(baseURL: URL(string: "https://example.test/api/")!)
+        XCTAssertEqual(request.url?.absoluteString, "https://example.test/api/categories/a%2Fb%3Fc%23d%25%20%26/products")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Accept"), "application/json")
+    }
+
+    func testTransportFailureBecomesUnavailable() async {
+        StubURLProtocol.handler = { _ in throw URLError(.notConnectedToInternet) }
+        do {
+            _ = try await makeAPI().featured()
+            XCTFail("Expected transport error")
+        } catch APIError.unavailable { }
+        catch { XCTFail("Unexpected error: \(error)") }
+    }
+
+    func testHTTPErrorWithoutBackendMessageUsesFallback() async {
+        StubURLProtocol.handler = { _ in (503, Data("Service unavailable".utf8)) }
+        do {
+            _ = try await makeAPI().featured()
+            XCTFail("Expected HTTP error")
+        } catch APIError.rejected(let status, let message) {
+            XCTAssertEqual(status, 503)
+            XCTAssertEqual(message, "The request could not be completed. Please try again.")
+        } catch { XCTFail("Unexpected error: \(error)") }
+    }
+
     func testMalformedSuccessfulResponseIsRejected() async {
         StubURLProtocol.handler = { _ in (200, Data(#"{"products":[{"wrong":"schema"}]}"#.utf8)) }
         do {

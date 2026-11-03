@@ -26,6 +26,7 @@ final class CatalogueViewModel {
     private(set) var state: LoadState<CatalogueContent> = .idle {
         didSet { onChange?() }
     }
+    private var loadID = UUID()
     var onChange: (() -> Void)?
 
     init(mode: CatalogueMode, api: CatalogueServing) {
@@ -34,6 +35,9 @@ final class CatalogueViewModel {
     }
 
     func load(query: String = "") async {
+        let requestID = UUID()
+        loadID = requestID
+        guard !Task.isCancelled else { return }
         let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
         if mode.isSearch && term.isEmpty {
             state = .loaded(CatalogueContent(categories: [], sections: []))
@@ -55,10 +59,10 @@ final class CatalogueViewModel {
                 let products = try await api.search(query: term)
                 content = CatalogueContent(categories: [], sections: [ProductSection(title: "Results", products: products)])
             }
-            guard !Task.isCancelled else { return }
+            guard loadID == requestID, !Task.isCancelled else { return }
             state = .loaded(content)
         } catch {
-            guard !Task.isCancelled, !(error is CancellationError) else { return }
+            guard loadID == requestID, !Task.isCancelled, !(error is CancellationError) else { return }
             state = .failed(error.localizedDescription)
         }
     }

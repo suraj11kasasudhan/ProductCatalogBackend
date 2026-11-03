@@ -85,6 +85,32 @@ final class ViewModelTests: XCTestCase {
         guard case .sent = model.state else { return XCTFail("Retry should succeed") }
     }
 
+    @MainActor
+    func testOlderSearchCannotOverwriteNewerSearch() async {
+        let api = StubCatalogueAPI()
+        let started = expectation(description: "First search started")
+        var pending: CheckedContinuation<[Product], Error>?
+        api.searchHandler = { query in
+            if query == "old" {
+                return try await withCheckedThrowingContinuation { continuation in
+                    pending = continuation
+                    started.fulfill()
+                }
+            }
+            return []
+        }
+        let model = CatalogueViewModel(mode: .search, api: api)
+        let first = Task { await model.load(query: "old") }
+        await fulfillment(of: [started], timeout: 1)
+        await model.load(query: "new")
+        pending?.resume(throwing: APIError.unavailable)
+        await first.value
+        guard case .loaded(let content) = model.state else {
+            return XCTFail("An older failure must not replace the current results")
+        }
+        XCTAssertTrue(content.sections.first?.products.isEmpty == true)
+    }
+
     func testDraftRejectsInvalidNamePhoneAndMessage() {
         XCTAssertThrowsError(try EnquiryDraft(name: "Two\nLines", email: "c@example.test", message: "Hello").request(productID: 1))
         XCTAssertThrowsError(try EnquiryDraft(name: "Customer", email: "c@example.test", phone: "letters", message: "Hello").request(productID: 1))

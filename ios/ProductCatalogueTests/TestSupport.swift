@@ -12,6 +12,7 @@ final class StubCatalogueAPI: CatalogueServing {
     var categoryNames = ["men's clothing"]
     var failure: Error?
     var confirmation = Confirmation(message: "Thank you. Your enquiry has been sent.")
+    var searchHandler: ((String) async throws -> [Product])?
     var searchTerms: [String] = []
     var submissions: [EnquiryRequest] = []
 
@@ -25,6 +26,7 @@ final class StubCatalogueAPI: CatalogueServing {
     }
     func search(query: String) async throws -> [Product] {
         searchTerms.append(query)
+        if let searchHandler { return try await searchHandler(query) }
         if let failure { throw failure }
         return products
     }
