@@ -18,7 +18,7 @@ const upstreamProduct = z.object({
 type Fetcher = (
   url: string,
   init: { signal: AbortSignal },
-) => Promise<{ ok: boolean; json(): Promise<unknown> }>;
+) => Promise<{ ok: boolean; status?: number; json(): Promise<unknown> }>;
 
 export class FakeStoreProducts implements ProductSource {
   private cache?: { products: Product[]; expiresAt: number };
@@ -44,13 +44,21 @@ export class FakeStoreProducts implements ProductSource {
   }
 
   private async load(): Promise<Product[]> {
+    let stage = 'request';
+    let status: number | undefined;
     try {
       const response = await this.fetcher(
         `${this.baseUrl.replace(/\/$/, '')}/products`,
         { signal: AbortSignal.timeout(5000) },
       );
+      status = response.status;
+      stage = 'http';
       if (!response.ok) throw new Error('Upstream HTTP error');
-      const rows = z.array(upstreamProduct).parse(await response.json());
+      stage = 'json';
+      const payload = await response.json();
+      stage = 'schema';
+      const rows = z.array(upstreamProduct).parse(payload);
+      stage = 'duplicate_ids';
       if (new Set(rows.map((row) => row.id)).size !== rows.length)
         throw new Error('Duplicate product IDs');
       const products = rows.map((row) => ({
@@ -64,7 +72,34 @@ export class FakeStoreProducts implements ProductSource {
       }));
       this.cache = { products, expiresAt: this.now() + this.ttlMs };
       return products;
-    } catch {
+    } catch (error) {
+      // Log only controlled categories and numeric status. Never log response
+      // bodies, URLs, credentials, or upstream exception messages.
+      const timeout = error instanceof Error && error.name === 'TimeoutError';
+      const cause = error instanceof Error ? error.cause : undefined;
+      const code =
+        cause && typeof cause === 'object' && 'code' in cause
+          ? cause.code
+          : undefined;
+      const networkCode =
+        typeof code === 'string' &&
+        [
+          'ENOTFOUND',
+          'EAI_AGAIN',
+          'ECONNREFUSED',
+          'ECONNRESET',
+          'ETIMEDOUT',
+          'UND_ERR_CONNECT_TIMEOUT',
+          'CERT_HAS_EXPIRED',
+          'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
+        ].includes(code)
+          ? code
+          : undefined;
+      console.warn('product_source_failed', {
+        stage: timeout ? 'timeout' : stage,
+        ...(Number.isInteger(status) ? { status } : {}),
+        ...(networkCode ? { networkCode } : {}),
+      });
       throw new AppError(
         502,
         'PRODUCT_SOURCE_UNAVAILABLE',

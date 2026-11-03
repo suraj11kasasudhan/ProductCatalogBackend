@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FakeStoreProducts } from '../src/adapters/fake-store-products.js';
 
 const row = {
@@ -12,6 +12,58 @@ const row = {
 };
 
 describe('Fake Store adapter', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('logs HTTP status without exposing the upstream body', async () => {
+    const log = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const source = new FakeStoreProducts(
+      'https://example.test',
+      100,
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        json: async () => ({ secret: 'must not appear' }),
+      }),
+    );
+    await expect(source.list()).rejects.toMatchObject({ status: 502 });
+    expect(log).toHaveBeenCalledExactlyOnceWith('product_source_failed', {
+      stage: 'http',
+      status: 403,
+    });
+  });
+
+  it('distinguishes timeouts without logging exception messages', async () => {
+    const log = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const source = new FakeStoreProducts(
+      'https://example.test',
+      100,
+      vi
+        .fn()
+        .mockRejectedValue(new DOMException('private details', 'TimeoutError')),
+    );
+    await expect(source.list()).rejects.toMatchObject({ status: 502 });
+    expect(log).toHaveBeenCalledExactlyOnceWith('product_source_failed', {
+      stage: 'timeout',
+    });
+  });
+
+  it('logs only allowlisted network codes', async () => {
+    const log = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const source = new FakeStoreProducts(
+      'https://example.test',
+      100,
+      vi.fn().mockRejectedValue(
+        new TypeError('private details', {
+          cause: { code: 'ENOTFOUND', hostname: 'private host' },
+        }),
+      ),
+    );
+    await expect(source.list()).rejects.toMatchObject({ status: 502 });
+    expect(log).toHaveBeenCalledExactlyOnceWith('product_source_failed', {
+      stage: 'request',
+      networkCode: 'ENOTFOUND',
+    });
+  });
   it('maps the external response and refreshes the cache after its TTL', async () => {
     let now = 0;
     const fetcher = vi
