@@ -31,8 +31,17 @@ Basic validation, fixed recipients, plain-text email, body limits and per-IP lim
 2. Run the live product-source smoke check after cloud allowlist activation and add a browser critical-path test.
 3. Add durable enquiries and idempotent submission if the entrepreneur needs delivery guarantees.
 4. Add structured request identifiers/metrics without logging customer contact data; configure production SMTP and verified delivery.
-5. Add CI, pinned container digests, and deployment configuration when the target AWS service is chosen.
+5. Pin container digests and add deployment configuration when the target AWS service is chosen. CI now checks formatting, types, tests and build.
 
 ## Validation limitations
 
 The current cloud policy blocks Fake Store API. Local HTTP fixtures validate the actual source adapter, while deterministic tests cover failure handling. The Docker backend and Mailpit work locally, but live catalogue access still needs the saved allowlist change applied. No external sales mailbox has been configured or tested.
+
+## Refactor review
+
+- Centralized request schemas and named enquiry input/contact contracts to keep HTTP validation and service boundaries readable.
+- Added a small injectable SMTP transport boundary to test recipient rejection and server-controlled email headers directly. DNS now has an explicit timeout.
+- Corrected error classification: internal SyntaxErrors return 500; malformed JSON returns 400; unsupported body encoding/charset returns 415. Already-started responses delegate to Express.
+- Search checks title and description independently so a phrase cannot match only by spanning the boundary between fields.
+- TypeScript checks now include tests and the smoke script. Prettier and GitHub Actions enforce the same development checks.
+- Retained the existing product-source/mail-provider architecture; a larger dependency-injection framework or database is not required for this scope.

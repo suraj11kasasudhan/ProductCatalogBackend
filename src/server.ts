@@ -8,11 +8,18 @@ import { createApp } from './app.js';
 
 const config = loadConfig();
 const dispatcher = new EnvHttpProxyAgent();
-const source = new FakeStoreProducts(config.PRODUCT_API_URL, config.CACHE_TTL_MS,
-  (url, init) => proxyFetch(url, { ...init, dispatcher }));
+const source = new FakeStoreProducts(
+  config.PRODUCT_API_URL,
+  config.CACHE_TTL_MS,
+  (url, init) => proxyFetch(url, { ...init, dispatcher }),
+);
 const catalogue = new CatalogueService(source, config.FEATURED_PRODUCT_IDS);
 const enquiries = new EnquiryService(catalogue, new SmtpMailer(config));
-const server = createApp({ catalogue, enquiries, corsOrigin: config.CORS_ORIGIN }).listen(config.PORT, '0.0.0.0', () => {
+const server = createApp({
+  catalogue,
+  enquiries,
+  corsOrigin: config.CORS_ORIGIN,
+}).listen(config.PORT, '0.0.0.0', () => {
   console.log(`Catalogue API listening on port ${config.PORT}`);
 });
 
@@ -20,6 +27,11 @@ for (const signal of ['SIGTERM', 'SIGINT']) {
   process.once(signal, () => {
     const timeout = setTimeout(() => process.exit(1), 10000);
     timeout.unref();
-    server.close(() => { void dispatcher.close().finally(() => { clearTimeout(timeout); process.exit(0); }); });
+    server.close(() => {
+      void dispatcher.close().finally(() => {
+        clearTimeout(timeout);
+        process.exit(0);
+      });
+    });
   });
 }

@@ -27,3 +27,9 @@ Review focused on input validation, deterministic featured selection, category d
 ## Time spent
 
 Timing is approximate active assistant execution, excluding earlier cloud provisioning and the wait for user approval. This implementation session was roughly 15 minutes: planning/re-reading 1 minute, implementation 4 minutes, build/test/environment diagnosis 6 minutes, and review/documentation/commits 4 minutes. These are estimates, not a human candidate's time log; the submitter should add their actual review and frontend work before submitting.
+
+## Follow-up refactor
+
+The user requested a full code review/refactor and remaining improvement advice. The assistant reviewed the source, tests, configuration and local tooling, corrected error classification, centralized validation, clarified type boundaries, added SMTP recipient tests, and introduced formatting and PR checks. The original 27 tests were expanded to 35. No additional agents were used.
+
+The original error handler treated any SyntaxError as a malformed client request. A regression test now confirms an internal source SyntaxError remains a 500 without leaking details. Additional tests verify unsupported request encodings and SMTP recipient rejection. The follow-up also strengthened smoke assertions and included tests/scripts in typechecking.
