@@ -1,0 +1,27 @@
+services:
+  api:
+    build: .
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      PORT: 3000
+      PRODUCT_API_URL: ${PRODUCT_API_URL:-https://fakestoreapi.com}
+      FEATURED_PRODUCT_IDS: ${FEATURED_PRODUCT_IDS:-1,2,3,4,5}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_SECURE: "false"
+      MAIL_FROM: catalogue@example.test
+      SALES_EMAIL: sales@example.test
+    depends_on:
+      - mailpit
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+  mailpit:
+    image: axllent/mailpit:v1.27.4
+    ports:
+      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:1025:1025"
