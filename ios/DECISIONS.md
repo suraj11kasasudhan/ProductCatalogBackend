@@ -18,3 +18,7 @@ Before submission, build/run in Xcode, test home/category/search/detail/enquiry 
 ## Hosted backend and UI update
 
 Both build configurations now use https://productcatalogbackend-1.onrender.com/api by default. The backend has migrated to DummyJSON while preserving the client contract. Debug scheme overrides remain available for local development. API timeouts allow the free hosted service to wake after inactivity; no automatic enquiry retries are introduced. Product rows use image cards, category labels and separate price/rating text, with refreshed headers, status screens and form styling. These UI changes still require Xcode build and simulator review.
+
+## Screen separation and collection design
+
+Screen views now own layout, cell configuration and rendering; view controllers only bind state, coordinate tasks and emit navigation events. A compositional collection grid replaces the table, using horizontal category chips and adaptive product columns. Reused visual choices live in CatalogueStyle. Product details configure persistent labels instead of recreating the hierarchy on every state update. Error mapping moved into APIError; request encoding, timeouts, cancellation and retry semantics are retained. This refactor adds no third-party app dependencies. Xcode build, XCTest and visual validation remain required on macOS.

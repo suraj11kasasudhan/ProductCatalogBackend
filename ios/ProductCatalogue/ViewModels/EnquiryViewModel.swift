@@ -19,7 +19,12 @@ final class EnquiryViewModel {
         self.api = api
     }
 
+    var isSending: Bool { if case .sending = state { return true }; return false }
+    var isSent: Bool { if case .sent = state { return true }; return false }
+    var errorMessage: String? { if case .failed(let message) = state { return message }; return nil }
+
     func submit(_ draft: EnquiryDraft) async {
+        guard !Task.isCancelled else { return }
         // Keep duplicate taps from producing duplicate emails within this screen.
         switch state {
         case .sending, .sent: return

@@ -144,6 +144,15 @@ final class CatalogueAPITests: XCTestCase {
         } catch { XCTFail("Unexpected error: \(error)") }
     }
 
+    func testCancelledTransportRemainsCancellationInsteadOfConnectionFailure() async {
+        StubURLProtocol.handler = { _ in throw URLError(.cancelled) }
+        do {
+            _ = try await makeAPI().featured()
+            XCTFail("Expected cancellation")
+        } catch is CancellationError { }
+        catch { XCTFail("Unexpected error: \(error)") }
+    }
+
     func testMalformedSuccessfulResponseIsRejected() async {
         StubURLProtocol.handler = { _ in (200, Data(#"{"products":[{"wrong":"schema"}]}"#.utf8)) }
         do {

@@ -11,7 +11,7 @@ final class StatusView: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         symbol.contentMode = .scaleAspectFit
-        symbol.tintColor = .systemIndigo
+        symbol.tintColor = CatalogueStyle.accent
         symbol.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 36, weight: .light)
         symbol.isAccessibilityElement = false
         heading.font = .preferredFont(forTextStyle: .title2)
@@ -25,6 +25,8 @@ final class StatusView: UIView {
         label.numberOfLines = 0
         retry.configuration = .filled()
         retry.configuration?.cornerStyle = .capsule
+        retry.configuration?.baseBackgroundColor = CatalogueStyle.accent
+        retry.configuration?.baseForegroundColor = CatalogueStyle.accentText
         retry.setTitle("Try again", for: .normal)
         retry.addTarget(self, action: #selector(retryTapped), for: .touchUpInside)
         let stack = UIStackView(arrangedSubviews: [symbol, spinner, heading, label, retry])
@@ -43,7 +45,7 @@ final class StatusView: UIView {
     required init?(coder: NSCoder) { fatalError("Use programmatic initialization") }
 
     func show(message: String, loading: Bool = false, canRetry: Bool = false) {
-        heading.text = loading ? "Finding your next favourite" : (canRetry ? "Let’s get you connected" : "Explore the catalogue")
+        heading.text = loading ? "A few good finds, coming up" : (canRetry ? "Something got in the way" : "Find your everyday favourites")
         symbol.image = UIImage(systemName: canRetry ? "wifi.exclamationmark" : "bag")
         symbol.isHidden = loading
         label.text = message

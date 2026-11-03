@@ -111,6 +111,23 @@ final class ViewModelTests: XCTestCase {
         XCTAssertTrue(content.sections.first?.products.isEmpty == true)
     }
 
+    @MainActor
+    func testFormPresentationTracksFailureAndSuccessfulRetry() async throws {
+        let api = StubCatalogueAPI()
+        api.failure = APIError.unavailable
+        let model = EnquiryViewModel(product: try sampleProduct(), api: api)
+        let draft = EnquiryDraft(name: "Customer", email: "c@example.test", message: "Hello")
+        await model.submit(draft)
+        XCTAssertFalse(model.isSending)
+        XCTAssertFalse(model.isSent)
+        XCTAssertNotNil(model.errorMessage)
+        api.failure = nil
+        await model.submit(draft)
+        XCTAssertFalse(model.isSending)
+        XCTAssertTrue(model.isSent)
+        XCTAssertNil(model.errorMessage)
+    }
+
     func testDraftRejectsInvalidNamePhoneAndMessage() {
         XCTAssertThrowsError(try EnquiryDraft(name: "Two\nLines", email: "c@example.test", message: "Hello").request(productID: 1))
         XCTAssertThrowsError(try EnquiryDraft(name: "Customer", email: "c@example.test", phone: "letters", message: "Hello").request(productID: 1))

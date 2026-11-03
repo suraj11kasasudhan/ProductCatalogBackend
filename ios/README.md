@@ -51,7 +51,7 @@ Models/       backend product DTO, catalogue groups, enquiry payload
 Networking/   configuration, endpoint definitions, request building, and NetworkManager
 Services/     CatalogueServing contract and CatalogueAPI response mapping
 ViewModels/   screen state, loading, validation, and enquiry submission
-Views/        UIKit layout, navigation, reusable cells/status/image views
+Views/        screen views own layout and rendering; controllers bind state and emit events
 ```
 
 View models run on the main actor and depend on `CatalogueServing`, not UIKit or a concrete network implementation. Controllers own their view model and loading task; update callbacks capture controllers weakly. Responses from cancelled or superseded loads cannot replace the current screen state. Controllers emit navigation events; CatalogueScreenFactory constructs destinations and injects their view models. CatalogueAPI depends on NetworkManaging, so transport can be replaced independently of the catalogue service.
@@ -73,7 +73,7 @@ xcodebuild test \
   CODE_SIGNING_ALLOWED=NO
 ```
 
-There are **19 XCTest methods** covering view-model states, search normalization, invalid forms, enquiry success/failure/retry, duplicate prevention, URL/query encoding, backend DTO decoding, HTTP errors and POST payloads. API tests inject URLProtocol responses and require neither Fake Store access nor SMTP. The shared scheme disables parallel test execution because its protocol stub has one shared response handler.
+There are **21 XCTest methods** covering view-model states, search normalization, invalid forms, enquiry success/failure/retry, duplicate prevention, URL/query encoding, backend DTO decoding, HTTP errors and POST payloads. API tests inject URLProtocol responses and require neither external product APIs nor SMTP. The shared scheme disables parallel test execution because its protocol stub has one shared response handler.
 
 The separate `.github/workflows/ios.yml` GitHub Actions workflow includes a macOS job that selects an available iPhone simulator and runs the same Xcode test target. Inspect the PR result before treating the app as build-verified.
 
@@ -99,3 +99,11 @@ python3 ios/generate_project.py
 Run it after adding/removing Swift files or changing generated build settings. It overwrites the project, shared scheme and Info.plists; update the generator rather than manually editing those generated files.
 
 Before public distribution, configure the actual bundle ID/signing team, HTTPS backend, app icon and privacy/distribution requirements. Durable enquiry delivery and request idempotency remain backend follow-ups rather than promises made by this client.
+
+## Grid UI and smaller controllers
+
+Browse uses a compositional collection layout: horizontal category chips, a two-column product grid on phones, three columns at widths of 700 points or more, and a single column at accessibility text sizes. All titles wrap. The warm neutral palette and accent adapt to dark mode. Details use a large image panel and a fixed enquiry action; the enquiry form remains keyboard-aware.
+
+`CatalogueView`, `ProductDetailView`, and `EnquiryView` own UIKit layout and rendering. Controllers bind view-model updates, own cancellable tasks, and forward navigation events to `CatalogueScreenFactory`. `CatalogueStyle` contains shared colors and controls. View models own loading, validation and submission state; `NetworkManager` owns transport and decoding, with error translation centralized in `APIError`. No UI framework or networking dependencies were added.
+
+Regression tests cover form state after retry and transport cancellation. The existing stale-search, enquiry duplication, endpoint encoding and backend error tests remain. Syntax parsing and project validation do not establish successful compilation or visual correctness; run Command-U and review narrow screens, rotation, accessibility text sizes, dark mode, keyboard scrolling, navigation and the live catalogue in Xcode.
