@@ -2,7 +2,7 @@
 
 ## Scope and choices
 
-- Implement the requested Node.js backend; a React TypeScript client is the intended next component. The frontend acceptance criteria are not fully satisfied by APIs alone.
+- Implement the requested Node.js backend. In the follow-up, the user chose Swift UIKit + MVVM for the client; its source and Xcode project now live under `ios/`. iOS build/runtime validation remains outstanding on macOS.
 - Use Node 24, TypeScript and Express 5: a small service with async error handling, strict types and minimal framework machinery. The lockfile makes installation repeatable.
 - Use interfaces only at expected replacement points: product source and mail provider. Fake Store schema mapping is isolated from the HTTP contract. A database-backed source can implement `ProductSource`; another provider can implement `Mailer`.
 - No database, authentication, admin UI, payment, queues or cloud deployment in this iteration. None is needed to demonstrate the requested backend path. This keeps setup small and avoids paid accounts.
@@ -27,7 +27,7 @@ Basic validation, fixed recipients, plain-text email, body limits and per-IP lim
 
 ## Another day
 
-1. Build the React client: home, category, search, detail and enquiry states, including accessible errors and retry behavior.
+1. Build and review the UIKit client on macOS, run its XCTest suite, and complete simulator-to-backend integration and accessibility checks.
 2. Run the live product-source smoke check after cloud allowlist activation and add a browser critical-path test.
 3. Add durable enquiries and idempotent submission if the entrepreneur needs delivery guarantees.
 4. Add structured request identifiers/metrics without logging customer contact data; configure production SMTP and verified delivery.
@@ -45,3 +45,13 @@ The current cloud policy blocks Fake Store API. Local HTTP fixtures validate the
 - Search checks title and description independently so a phrase cannot match only by spanning the boundary between fields.
 - TypeScript checks now include tests and the smoke script. Prettier and GitHub Actions enforce the same development checks.
 - Retained the existing product-source/mail-provider architecture; a larger dependency-injection framework or database is not required for this scope.
+
+## UIKit client follow-up
+
+The user chose native iOS with UIKit and MVVM. The client shares this repository so reviewers can start the backend and open the checked-in Xcode project without coordinating two checkouts. URLSession and system UIKit components avoid dependency installation. iOS 16 is the minimum supported version; the project uses Swift 5 language mode with Xcode 16 or later.
+
+View models expose observable screen state through closures, are main-actor isolated, and depend on a CatalogueServing protocol. The network layer converts backend response envelopes and safely encodes categories/search parameters. The UI never calls a Fake Store product endpoint; only returned image URLs are fetched directly.
+
+No backend deployment is required for a simulator on the same Mac. Debug local networking is configured separately from Release, which requires a real HTTPS API URL. Currency is not inferred. The client does not add durable enquiries: a lost successful response can still result in duplicate email after a retry.
+
+The Linux workspace cannot compile or run UIKit. Syntax/project parser checks are useful preliminary evidence, not an Xcode build. The macOS CI job and manual simulator walkthrough remain required before submission.

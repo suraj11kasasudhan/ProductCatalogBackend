@@ -2,7 +2,7 @@
 
 Node.js 24 + TypeScript + Express backend for the AI-Native Engineer challenge. It provides catalogue browsing, five curated featured products, category groups, search, product details, and enquiry emails. Product data always passes through this backend.
 
-This repository implements the **backend only**. A React web client is the intended consumer; no frontend is included. The full challenge still needs a client before submission.
+This repository also includes a **Swift UIKit + MVVM iOS client** in [`ios/`](ios/README.md). Open its checked-in Xcode project on a Mac; simulator builds default to this backend at `http://localhost:3000/api`. The iOS build and simulator integration still require validation on macOS/CI.
 
 ## Run locally
 
@@ -84,7 +84,7 @@ See `.env.example`. Server startup validates configuration. Never commit `.env` 
 | `PRODUCT_API_URL`          | `https://fakestoreapi.com`; adapter appends `/products`                    |
 | `FEATURED_PRODUCT_IDS`     | `1,2,3,4,5`; five distinct positive IDs                                    |
 | `CACHE_TTL_MS`             | `60000`; process-local product cache, `0` disables retention               |
-| `CORS_ORIGIN`              | `http://localhost:5173`; intended React dev origin                         |
+| `CORS_ORIGIN`              | `http://localhost:5173`; optional browser-client dev origin                |
 | `SMTP_HOST`, `SMTP_PORT`   | `127.0.0.1`, `1025` for host development                                   |
 | `SMTP_SECURE`              | `false`; use `true` for an implicit TLS SMTP endpoint (typically port 465) |
 | `SMTP_USER`, `SMTP_PASS`   | Optional; provide both when authentication is required                     |

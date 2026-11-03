@@ -9,3 +9,7 @@ Approved scope: implement the Node.js backend in this repository on a feature br
 5. Document setup, API behavior, assumptions, AI usage and limitations. Commit on `feat/catalogue-backend`.
 
 The architecture stays small: routes → services → product/email adapters. No database or paid services are required. Additional features are listed in DECISIONS.md.
+
+## Approved native-client follow-up
+
+Add Swift UIKit + MVVM client source under ios/, connect home/category/search/detail/enquiry flows to the existing Node API, and include a checked-in Xcode project, configurable local API address and XCTest coverage. Validate what is possible in Linux; explicitly leave Xcode compilation, XCTest execution and manual simulator integration pending macOS/CI. The simulator can use a backend running on the same Mac without deployment.

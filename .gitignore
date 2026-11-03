@@ -3,3 +3,9 @@ dist/
 coverage/
 .env
 *.log
+# Xcode user state and build outputs
+ios/build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+.DS_Store
