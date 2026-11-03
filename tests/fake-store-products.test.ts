@@ -29,6 +29,62 @@ describe('Fake Store adapter', () => {
     expect(log).toHaveBeenCalledExactlyOnceWith('product_source_failed', {
       stage: 'http',
       status: 403,
+      provider: 'unidentified',
+      cloudflareChallenge: false,
+      responseFormat: 'other',
+    });
+  });
+
+  it('identifies a Cloudflare challenge without logging cookies or response bodies', async () => {
+    const log = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const headers = new Headers({
+      server: 'cloudflare',
+      'cf-mitigated': 'challenge',
+      'cf-ray': '0123456789abcdef-SIN',
+      'content-type': 'text/html; charset=UTF-8',
+      'set-cookie': 'private-token',
+    });
+    const source = new FakeStoreProducts(
+      'https://example.test',
+      100,
+      vi
+        .fn()
+        .mockResolvedValue({ ok: false, status: 403, headers, json: vi.fn() }),
+    );
+    await expect(source.list()).rejects.toMatchObject({ status: 502 });
+    expect(log).toHaveBeenCalledExactlyOnceWith('product_source_failed', {
+      stage: 'http',
+      status: 403,
+      provider: 'cloudflare',
+      cloudflareChallenge: true,
+      responseFormat: 'html',
+      cloudflareRay: '0123456789abcdef-SIN',
+    });
+  });
+
+  it('does not mistake every Cloudflare 403 for a challenge or log arbitrary header values', async () => {
+    const log = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const source = new FakeStoreProducts(
+      'https://example.test',
+      100,
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        headers: new Headers({
+          server: 'cloudflare',
+          'cf-ray': 'private details',
+          'content-type': 'application/json',
+        }),
+        json: vi.fn(),
+      }),
+    );
+    await expect(source.list()).rejects.toMatchObject({ status: 502 });
+    expect(log).toHaveBeenCalledExactlyOnceWith('product_source_failed', {
+      stage: 'http',
+      status: 403,
+      provider: 'cloudflare',
+      cloudflareChallenge: false,
+      responseFormat: 'json',
     });
   });
 
