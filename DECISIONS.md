@@ -1,51 +1,49 @@
-# Decisions and assumptions
+# Backend decisions and tradeoffs
 
-## Scope and choices
+## Context and authorship
 
-- Implement the requested Node.js backend; a React TypeScript client is the intended next component. The frontend acceptance criteria are not fully satisfied by APIs alone.
-- Use Node 24, TypeScript and Express 5: a small service with async error handling, strict types and minimal framework machinery. The lockfile makes installation repeatable.
-- Use interfaces only at expected replacement points: product source and mail provider. Fake Store schema mapping is isolated from the HTTP contract. A database-backed source can implement `ProductSource`; another provider can implement `Mailer`.
-- No database, authentication, admin UI, payment, queues or cloud deployment in this iteration. None is needed to demonstrate the requested backend path. This keeps setup small and avoids paid accounts.
+The author reports approximately four hours for the initial design and implementation of the iOS frontend and Node.js backend combined. All code was written using AI, including application code, tests, configuration and documentation. The author supplied requirements, design direction, local execution feedback and approval. The estimate is author-reported; it is not a measured agent runtime or proof that all subsequent deployment troubleshooting and review fit that window.
 
-## Acceptance-criteria assumptions
+The backend lives in ProductCatalogBackend. Its original feature PR has been merged into main, while Render currently tracks feat/catalogue-backend. The UIKit frontend lives independently in ProductCatalogiOS. There is no React frontend in this repository.
 
-- “I have chosen 5 products” means editorial selection, rather than the five highest numerical ratings. `FEATURED_PRODUCT_IDS` is the selection. Source ratings are still returned for display.
-- Default selected IDs are 1–5. Selection order is preserved. If any selected ID disappears, featured endpoints fail explicitly instead of silently returning fewer than five; a category grouping also reports the invalid selection.
-- Category featured products are the intersection of that global selection and the category. Remaining products are returned separately, with no duplicates. Some categories can have zero featured items.
-- Search uses literal, case-insensitive substring matching in title/description. Empty input returns all products. Category and search filters combine.
-- Contact means name and email, with optional phone and a required message. The submitted product must exist. No enquiry history or customer accounts are retained.
-- A successful enquiry means SMTP accepted the sales recipient. It does not guarantee inbox placement. Mailpit is the local sales inbox and needs no external account.
-- Product price is passed through as a numeric source amount. Currency localization is deferred; no currency information is invented.
+## Small modules and dependency injection
 
-## Reliability and trade-offs
+Node 24, TypeScript, Express 5 and native async handlers keep the service small and the toolchain explicit. The lockfile reproduces dependencies. Shared Zod schemas validate the HTTP boundary; services implement business behavior; adapters own external HTTP/SMTP details.
 
-A five-second product timeout bounds upstream latency. Responses are schema-validated before caching for 60 seconds. Concurrent cache misses share a request. The process cache is intentionally small because the source catalogue is small. There is no hidden demo fallback or stale-on-error mode.
+ProductSource isolates the upstream catalogue. ProductLookup exposes only get(id) to the enquiry service, so an enquiry can be tested without constructing a catalogue or HTTP app. Mailer isolates delivery. The SMTP adapter accepts a transport, the product adapter accepts a fetcher and clock, and createApp accepts services plus an optional rate-limit Store. These seams are enough for the current scope; a DI container, ORM or generic repository layer would add setup without solving an observed problem.
 
-Email is sent synchronously for a truthful confirmation. An SMTP failure returns 502. There is no queue or durable record, so a lost response followed by a retry can duplicate email. Persisted enquiries, idempotency keys and an outbox are appropriate next steps once durability is required.
+## Fake Store to DummyJSON
 
-Basic validation, fixed recipients, plain-text email, body limits and per-IP limits address the immediate public-form risks. Rate limits are per process and reset on restart. Proxy trust and a distributed rate-limit store must be set deliberately for production deployment. These are not a replacement for abuse monitoring.
+Fake Store was originally required. Render requests received HTTP 403 with Cloudflare as provider, cf-mitigated: challenge, and HTML instead of JSON. The endpoint worked in the author's browser, and changing Render regions did not fix hosted access. That confirms a browser challenge on those requests; it does not identify the exact firewall rule or prove a global ban on a hosting provider.
 
-## Another day
+The author explicitly approved switching to another free API. DummyJSON now supplies products, mapped to the same public DTO consumed by iOS. This is an intentional departure from the original Fake Store requirement and must be disclosed rather than hidden behind a fake fallback.
 
-1. Build the React client: home, category, search, detail and enquiry states, including accessible errors and retry behavior.
-2. Run the live product-source smoke check after cloud allowlist activation and add a browser critical-path test.
-3. Add durable enquiries and idempotent submission if the entrepreneur needs delivery guarantees.
-4. Add structured request identifiers/metrics without logging customer contact data; configure production SMTP and verified delivery.
-5. Pin container digests and add deployment configuration when the target AWS service is chosen. CI now checks formatting, types, tests and build.
+The adapter requests /products?limit=0 to obtain the full catalogue, validates shape/completeness/unique IDs, maps thumbnail to imageUrl and numeric rating to rating.value, and counts supplied reviews for rating.count. Provider changes also change product identities and categories. Five configured IDs remain the editorial selection.
 
-## Validation limitations
+## Catalogue behavior
 
-The current cloud policy blocks Fake Store API. Local HTTP fixtures validate the actual source adapter, while deterministic tests cover failure handling. The Docker backend and Mailpit work locally, but live catalogue access still needs the saved allowlist change applied. No external sales mailbox has been configured or tested.
+Featured means exactly the configured five editorial IDs, in configuration order; it does not mean the five highest ratings. Missing IDs fail explicitly with 503. Category pages intersect that selection with their category and return remaining products separately without duplicates. A category can have no featured products.
 
-## Refactor review
+Search is a literal case-insensitive substring within title or description separately, so phrases do not match only by spanning the field boundary. Category and search filters combine. Empty queries return the catalogue; unknown resources return 404. The numeric price is passed through without inventing currency metadata.
 
-- Centralized request schemas and named enquiry input/contact contracts to keep HTTP validation and service boundaries readable.
-- Added a small injectable SMTP transport boundary to test recipient rejection and server-controlled email headers directly. DNS now has an explicit timeout.
-- Corrected error classification: internal SyntaxErrors return 500; malformed JSON returns 400; unsupported body encoding/charset returns 415. Already-started responses delegate to Express.
-- Search checks title and description independently so a phrase cannot match only by spanning the boundary between fields.
-- TypeScript checks now include tests and the smoke script. Prettier and GitHub Actions enforce the same development checks.
-- Retained the existing product-source/mail-provider architecture; a larger dependency-injection framework or database is not required for this scope.
+The five-second timeout bounds upstream latency. A short per-process cache and coalesced misses reduce calls. Invalid or partial catalogues never enter the cache. Expired cache entries are not served on error; there is no stale/demo fallback. Fetchers and clocks are injected so cache/failure tests remain deterministic.
 
-## DummyJSON migration
+## Enquiry correctness
 
-The user approved replacing Fake Store after deployed requests received Cloudflare challenges. DummyJSON is now the product source; the public product contract and service behavior remain unchanged. Fetch the complete collection with `limit=0`, reject incomplete collections, map thumbnails to imageUrl and numeric ratings to rating.value. rating.count is the number of supplied review entries. Existing product identities and categories change with the source. Render must update its explicit PRODUCT_API_URL override. Live access from Render remains to be checked after deployment.
+The server verifies product existence and constructs the product title, sender, recipient and subject. Customer input is plain text; contact fields and body sizes are bounded. SMTP success requires acceptance of the configured sales address, including supported string/address-object transport response forms; an unrelated accepted address must not produce success.
+
+Synchronous SMTP allows a truthful acceptance response but does not guarantee inbox delivery. There is no persistent enquiry record, queue, idempotency key or automatic retry. A response lost after SMTP acceptance can produce a duplicate on manual resubmission. A durable outbox and idempotency are next steps only when delivery guarantees are required.
+
+## Scaling and hosting boundaries
+
+The current configuration is a small single-process service, not a fully configured distributed system. The default limiter and product cache are process-local and reset on restart. createApp's optional enquiryStore allows a compatible shared store when multiple replicas are introduced, but no Redis service or distributed-store integration is installed or validated by this change.
+
+Express leaves proxy trust disabled. A production deployment must configure trusted proxy hops/addresses for its actual topology before relying on per-client IP limits. Blanket trust can permit spoofed forwarding headers; leaving trust disabled behind a proxy can aggregate callers under a proxy IP. This must be an explicit deployment decision.
+
+Render's free service can sleep and blocks standard SMTP ports 25, 465 and 587. Catalogue browsing succeeding does not establish production email delivery. Use supported hosting/provider settings, a verified sender and real recipient for email. DummyJSON and free hosting are demo dependencies, not an availability SLA.
+
+## Validation and follow-ups
+
+The suite covers source mapping/cache/failure behavior, API filtering and validation, injected product lookup and mailer, injected rate-limit store enforcement, safe error classification, and SMTP recipient correctness. Local fixture tests do not establish live provider uptime or external mailbox delivery. Mailpit smoke testing is separate and must be reported only when run.
+
+The author confirmed the hosted catalogue returns data after the DummyJSON migration. Multi-replica infrastructure, durable enquiry handling, production SMTP, request-level observability without personal data, and container-digest pinning remain follow-ups. Test/build counts and commands are kept in README.md; check CI for the matching commit before claiming remote deployment readiness.

@@ -11,3 +11,7 @@ export interface Product {
 export interface ProductSource {
   list(): Promise<Product[]>;
 }
+
+export interface ProductLookup {
+  get(id: number): Promise<Product>;
+}

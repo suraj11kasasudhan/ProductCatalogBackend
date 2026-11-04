@@ -1,10 +1,10 @@
 import type { EnquiryInput, Mailer } from '../contracts/mailer.js';
-import type { CatalogueService } from './catalogue-service.js';
+import type { ProductLookup } from '../contracts/product-source.js';
 import { AppError } from '../errors.js';
 
 export class EnquiryService {
   constructor(
-    private readonly catalogue: CatalogueService,
+    private readonly catalogue: ProductLookup,
     private readonly mailer: Mailer,
   ) {}
 

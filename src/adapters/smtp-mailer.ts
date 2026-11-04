@@ -15,9 +15,10 @@ type SmtpConfig = Pick<
 
 // Keep SMTP results at the adapter boundary; services only depend on Mailer.
 interface MailTransport {
-  sendMail(
-    options: SendMailOptions,
-  ): Promise<{ accepted: unknown[]; rejected: unknown[] }>;
+  sendMail(options: SendMailOptions): Promise<{
+    accepted: Array<string | { address: string }>;
+    rejected: unknown[];
+  }>;
 }
 
 export class SmtpMailer implements Mailer {
@@ -58,7 +59,12 @@ export class SmtpMailer implements Mailer {
         enquiry.message,
       ].join('\n'),
     });
-    if (!result.accepted.length || result.rejected.length)
+    const accepted = result.accepted.some((recipient) => {
+      const address =
+        typeof recipient === 'string' ? recipient : recipient.address;
+      return address.toLowerCase() === this.config.SALES_EMAIL.toLowerCase();
+    });
+    if (!accepted || result.rejected.length)
       throw new Error('Recipient was not accepted');
   }
 }

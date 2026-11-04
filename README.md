@@ -1,115 +1,120 @@
-# Product catalogue backend
+# Product Catalogue Backend
 
-Node.js 24 + TypeScript + Express backend for the AI-Native Engineer challenge. It provides catalogue browsing, five curated featured products, category groups, search, product details, and enquiry emails. Product data always passes through this backend.
+Node.js 24, TypeScript and Express 5 API for catalogue browsing, five curated featured products, category groups, search, details, and product enquiries. The [standalone UIKit iOS client](https://github.com/suraj11kasasudhan/ProductCatalogiOS) consumes this backend.
 
-This repository implements the **backend only**. A React web client is the intended consumer; no frontend is included. The full challenge still needs a client before submission.
+The current product source is **DummyJSON**. Fake Store was originally required, but requests from our Render deployment returned **HTTP 403 Cloudflare browser challenges**, with `cf-mitigated: challenge` and HTML instead of JSON. Browser access worked; changing Render regions did not resolve hosted access. The author approved switching providers while preserving the public API. This is a disclosed departure from the original Fake Store requirement, not a claim that Fake Store is universally unavailable.
 
 ## Run locally
 
-Requires Docker Engine/Desktop with Compose and Internet access to Docker Hub, npm and `fakestoreapi.com`. No accounts or paid services are required.
+Requires Docker Engine/Desktop with Compose and access to Docker Hub, npm, and `dummyjson.com`:
 
 ```sh
 docker compose up --build
 ```
 
-The API listens on port 3000. Mailpit captures emails locally; its inbox UI uses port 8025. SMTP uses port 1025. All published ports bind to loopback. The first build downloads dependencies; allow a few minutes. Stop with `docker compose down`. Mailpit messages are disposable and not persisted across container replacement.
+The API is published on port 3000. Mailpit captures local email, with its inbox on port 8025 and SMTP on port 1025. Ports are bound to loopback. Mailpit does not deliver to external inboxes and messages are disposable.
 
 ```sh
 curl http://127.0.0.1:3000/api/health
 curl http://127.0.0.1:3000/api/products/featured
-curl 'http://127.0.0.1:3000/api/products?q=shirt'
+curl 'http://127.0.0.1:3000/api/products?q=mascara'
 curl -X POST http://127.0.0.1:3000/api/enquiries \
   -H 'Content-Type: application/json' \
   -d '{"productId":1,"name":"Alex","email":"alex@example.test","message":"Is this available?"}'
 ```
 
-The enquiry response contains a thank-you message only when SMTP accepts the sales recipient. Inspect the Mailpit inbox to see the message. Local Mailpit does **not** deliver to an external mailbox.
+Stop with `docker compose down`. Health checks process availability, not product-source or SMTP readiness.
 
 ## Develop and test
 
-Requires Node.js 24 and npm. `.nvmrc` specifies the Node major.
+Use Node.js 24 (`.nvmrc`) and the checked-in lockfile:
 
 ```sh
 npm ci
 npm run dev
-```
-
-Defaults work without `.env`. Copy `.env.example` to `.env` to customize. For local SMTP, start `docker compose up -d mailpit` in another terminal.
-
-```sh
-npm run check # formatting, typecheck (including tests/scripts), and 46 tests
-npm test
+npm run check
 npm run build
-npm start
 ```
 
-`npm test` runs 46 deterministic tests without Internet access or SMTP. To test actual SMTP delivery:
+`npm run check` runs Prettier verification, TypeScript checks for source/tests/scripts, and **53 automated tests**. Tests inject product sources, fetchers, clocks, lookup services, mail transports and rate-limit stores; they need neither live DummyJSON nor real SMTP. HTTP tests bind localhost, so run them in an environment that permits local sockets.
+
+`npm start` runs the compiled build. Defaults work without `.env`; copy `.env.example` only when customizing configuration. For native development with local email, start `docker compose up -d mailpit`.
+
+For the separate real-SMTP smoke test:
 
 ```sh
 docker compose up -d mailpit
 npm run smoke
 ```
 
-The smoke test uses a temporary local HTTP product source and the real SMTP adapter, then checks the received message's body, recipient and reply-to address through Mailpit's API. It does not validate live DummyJSON availability. `MAILPIT_URL` overrides its default `http://127.0.0.1:8025` inbox API.
+The smoke script uses a local DummyJSON-format HTTP fixture, the actual adapter and SMTP transport, and verifies the received recipient, reply-to and message body in Mailpit. It does not test the live provider. `MAILPIT_URL` overrides its default inbox address.
 
-Formatting is standardized with Prettier: `npm run format` applies it and `npm run format:check` verifies it. GitHub Actions runs the same checks and the build for pull requests into main. The workflow has been added; its remote execution must be checked in the PR.
+GitHub Actions runs installation, checks and build on pushes to main/the deployment branch and pull requests to main. Check the workflow result for the matching commit; local tests do not prove a remote deployment succeeded.
 
-## API
+## API contract
 
-| Method/path                              | Response                                                                              |
-| ---------------------------------------- | ------------------------------------------------------------------------------------- |
-| `GET /api/health`                        | `{ "status": "ok" }`; process health, not dependency readiness                        |
-| `GET /api/products/featured`             | `{ "products": [...] }`; exactly the configured five, in configured order             |
-| `GET /api/categories`                    | `{ "categories": ["..."] }`; sorted names                                             |
-| `GET /api/products?category=...&q=...`   | `{ "products": [...] }`; filters combine with AND                                     |
-| `GET /api/categories/:category/products` | `{ "featured": [...], "products": [...] }`; additional products exclude featured ones |
-| `GET /api/products/:id`                  | `{ "product": {...} }`                                                                |
-| `POST /api/enquiries`                    | `{ "message": "Thank you. ..." }` after SMTP acceptance                               |
+| Method and path                          | Response                                                                             |
+| ---------------------------------------- | ------------------------------------------------------------------------------------ |
+| `GET /api/health`                        | `{ "status": "ok" }`                                                                 |
+| `GET /api/products/featured`             | `{ "products": [...] }`, exactly five configured IDs in selection order              |
+| `GET /api/categories`                    | `{ "categories": ["..."] }`, sorted                                                  |
+| `GET /api/products?category=...&q=...`   | `{ "products": [...] }`, filters combine with AND                                    |
+| `GET /api/categories/:category/products` | `{ "featured": [...], "products": [...] }`, disjoint groups                          |
+| `GET /api/products/:id`                  | `{ "product": {...} }`                                                               |
+| `POST /api/enquiries`                    | `{ "message": "Thank you. ..." }` only after the sales recipient is accepted by SMTP |
 
-URL-encode category names in paths. Unknown category pages and product IDs return 404. Empty searches return all products; no matches return an empty list. Search matches title or description, case-insensitively. A category query with no matching products returns an empty list.
+A product contains `id`, `title`, `description`, numeric `price`, `imageUrl`, `category`, and `rating: { value, count }`. DummyJSON thumbnails map to imageUrl; rating.count counts supplied review entries, not an independently reported total. Currency is not invented. Clients should obtain metadata through this API.
 
-A product has `id`, `title`, `description`, `price`, `imageUrl`, `category`, and `rating: { value, count }`. Price is the source's numeric amount; currency conversion is outside scope. Clients should render strings as text and use the backend API base URL rather than DummyJSON endpoints.
+Search is literal and case-insensitive within title or description. Empty search returns all products. Unknown category pages or product IDs return 404; searches with no matches return an empty list. Category path components must be URL-encoded. Missing featured IDs return 503 instead of silently shortening the selection.
 
-Enquiries accept `productId` (positive integer), `name` (1–100 characters), `email`, `message` (1–5000 characters), and optional `phone` (3–30 characters). Unknown fields are rejected. Contact details are trimmed. Recipients and email subject are controlled by the server.
+Enquiries require positive integer `productId`, single-line `name` (1–100 characters), `email` (up to 254 characters), `message` (1–5000 characters), and optional `phone` (3–30 allowed characters). Input is trimmed; unknown fields are rejected. The server controls sender, recipient and subject. Success means SMTP acceptance, not guaranteed final mailbox delivery.
 
-Errors use `{ "error": { "code": "...", "message": "..." } }`; validation errors also include field paths. Status codes include 400 invalid input, 404 missing resource, 413 oversized body, 415 unsupported encoding/charset, 429 enquiry rate limit, 502 upstream/SMTP failure, and 503 unavailable featured selection. No raw upstream errors or enquiry contents are logged.
+Errors use `{ "error": { "code": "...", "message": "..." } }`. Validation errors also include field paths. Statuses include 400, 404, 413, 415, 429, 502 and 503. Internal errors, credentials, response bodies and customer contact details are not returned or logged.
 
-## Configuration
+## Modules and dependency injection
 
-See `.env.example`. Server startup validates configuration. Never commit `.env` or real credentials.
+| Module      | Responsibility                                                              |
+| ----------- | --------------------------------------------------------------------------- |
+| `routes`    | Parse input with shared schemas and translate service results to HTTP       |
+| `services`  | Catalogue selection/filtering and enquiry orchestration                     |
+| `contracts` | ProductSource, ProductLookup, Mailer, product and contact shapes            |
+| `adapters`  | DummyJSON validation/mapping/cache and SMTP delivery                        |
+| `app.ts`    | Inject services and optional enquiry rate-limit store; configure middleware |
+| `server.ts` | Production dependency composition, listener and graceful shutdown           |
 
-| Variable                   | Default / meaning                                                          |
-| -------------------------- | -------------------------------------------------------------------------- |
-| `PORT`                     | `3000`                                                                     |
-| `PRODUCT_API_URL`          | `https://dummyjson.com`; adapter appends `/products?limit=0`               |
-| `FEATURED_PRODUCT_IDS`     | `1,2,3,4,5`; five distinct positive IDs                                    |
-| `CACHE_TTL_MS`             | `60000`; process-local product cache, `0` disables retention               |
-| `CORS_ORIGIN`              | `http://localhost:5173`; intended React dev origin                         |
-| `SMTP_HOST`, `SMTP_PORT`   | `127.0.0.1`, `1025` for host development                                   |
-| `SMTP_SECURE`              | `false`; use `true` for an implicit TLS SMTP endpoint (typically port 465) |
-| `SMTP_USER`, `SMTP_PASS`   | Optional; provide both when authentication is required                     |
-| `MAIL_FROM`, `SALES_EMAIL` | `catalogue@example.test`, `sales@example.test`                             |
+EnquiryService accepts the narrow ProductLookup contract rather than a concrete catalogue class. ProductSource/Mailer keep external providers replaceable. DummyJSONProducts accepts a fetcher and clock; SmtpMailer accepts a transport. `createApp` accepts `enquiryStore` for a compatible shared rate-limit store. No DI framework, database, queue or shared store is installed by default.
 
-Compose deliberately configures local Mailpit. For a real sales inbox, run the backend with your SMTP provider's settings, verified sender, and recipient. SMTP acceptance cannot guarantee final mailbox delivery. Enquiries are not stored and retries can send duplicates if an earlier response was lost.
+## Configuration and deployment
 
-## Structure and boundaries
+| Variable                   | Default / purpose                                                  |
+| -------------------------- | ------------------------------------------------------------------ |
+| `PORT`                     | `3000`; hosting platforms can supply their own                     |
+| `PRODUCT_API_URL`          | `https://dummyjson.com`; adapter appends `/products?limit=0`       |
+| `FEATURED_PRODUCT_IDS`     | `1,2,3,4,5`; five distinct positive IDs                            |
+| `CACHE_TTL_MS`             | `60000`; `0` disables retained caching                             |
+| `CORS_ORIGIN`              | `http://localhost:5173`; browser client origin, not authentication |
+| `SMTP_HOST`, `SMTP_PORT`   | `127.0.0.1`, `1025` for native local development                   |
+| `SMTP_SECURE`              | `false`; use `true` for implicit TLS, commonly port 465            |
+| `SMTP_USER`, `SMTP_PASS`   | Optional pair; both are required when authentication is configured |
+| `MAIL_FROM`, `SALES_EMAIL` | Local `.test` addresses; replace for real delivery                 |
 
-`routes` validate HTTP input using shared schemas in `routes/schemas.ts`; `services` implement catalogue/enquiry behavior; `adapters` contain DummyJSON and SMTP details; `contracts` define the internal product and mail interfaces. `app.ts` is dependency-injected for testing; `server.ts` wires production dependencies and handles shutdown.
+Never commit `.env` or credentials. Set real secrets in your hosting platform. Startup validates configuration. Local Compose deliberately uses Mailpit; deploying only the web-service Dockerfile does not deploy that local inbox.
 
-The catalogue has a five-second source timeout, validated upstream responses, a short cache, and coalesced concurrent loads. Expired cache entries are not served on failure. Email connections and sends have timeouts. Helmet, a 16 KB JSON body limit, and a process-local enquiry limit (10 requests per IP per 15 minutes) provide basic safeguards.
+The author deployed the API at `https://productcatalogbackend-1.onrender.com/api` and confirmed catalogue data after the DummyJSON migration. Render uses Docker, repository-root context, `./Dockerfile`, and health path `/api/health`. Keep `PRODUCT_API_URL=https://dummyjson.com` without `/products`. Render supplies PORT; the server binds to `0.0.0.0`. The configured deployment branch is `feat/catalogue-backend`.
 
-Express does not trust proxy headers by default. When deploying behind a known AWS load balancer, explicitly configure trusted proxy hops and use a shared limiter for multiple replicas. No infrastructure is provisioned; the container can run on AWS container services. CORS is a browser policy, not authentication.
+Free Render instances sleep after inactivity and block standard outbound SMTP ports 25, 465 and 587. Browsing can work while enquiries fail. Production email requires a supported hosting/email configuration; SMTP acceptance still does not guarantee final delivery.
 
-## Validation in this cloud session
+## Reliability and scaling boundaries
 
-TypeScript build/typecheck and all 35 tests passed. The Docker image built with TLS verification enabled; API health and real Mailpit delivery passed. Live Fake Store calls returned a cloud proxy policy denial, surfaced by the API as 502. An allowlist addition for `fakestoreapi.com` was saved in the environment draft; live-source behavior remains unverified until access is enabled. No fake catalogue is used as a production fallback.
+- Product fetches time out after five seconds. Validated, complete catalogues are cached per process and concurrent cache misses share one request. Expired cache entries are not silently served on failure.
+- Helmet, a 16 KB JSON limit, schema validation and an enquiry limit of 10 requests per IP per 15 minutes cover the current public-form workflow.
+- The default limiter and cache are process-local and reset on restart. Before running multiple replicas, inject a shared Store into createApp and configure trusted proxies for the actual hosting topology. The injected-store test verifies the seam, not a production Redis deployment.
+- Express does not trust forwarded IP headers by default. Review proxy handling before relying on per-client limits behind a load balancer; do not enable blanket trust.
+- Enquiries have no persistence or idempotency key. A lost response can lead to duplicate email on manual retry. Durable delivery needs storage plus idempotency/outbox design; it is not supplied by synchronous SMTP.
+- DummyJSON is a demo provider and free hosting is not a production availability guarantee. Safe upstream diagnostics distinguish HTTP/schema/timeout failures and Cloudflare challenges without exposing payloads or credentials.
 
-See [DECISIONS.md](DECISIONS.md), [AI_USAGE.md](AI_USAGE.md), and [PLAN.md](PLAN.md) for scope, reasoning and work history.
+## Development record
 
-## Render migration from Fake Store
+The author reports approximately **four hours** for the initial frontend/backend design and implementation combined. **All code was written using AI**, with the author providing requirements, decisions, local feedback and approval. This estimate is author-reported, not a measured time log or proof that subsequent revisions and verification happened within the same window.
 
-This branch now uses DummyJSON because Fake Store returned Cloudflare browser challenges to the deployed backend. In Render → Environment, change the existing `PRODUCT_API_URL` to `https://dummyjson.com` (without `/products`), save and redeploy. Existing environment overrides take precedence over the new default. No iOS endpoint or response-schema change is required. Verify `/api/products/featured`, `/api/categories`, `/api/products?q=mascara`, and a product detail after deployment. Health alone does not verify upstream access.
-
-The adapter requests `/products?limit=0` to load all products for local search and category grouping. DummyJSON supplies a numeric rating; the returned `rating.count` counts the review entries supplied with each product. Featured IDs 1–5 remain the default; product identities, categories and content change with the provider. SMTP configuration is independent and still required for enquiries.
-
-The source change is validated by deterministic tests; live DummyJSON access from Render must still be verified after deployment. Historical validation notes above describe earlier sessions, not proof of the new provider's availability.
+See [AGENTS.md](AGENTS.md), [DECISIONS.md](DECISIONS.md), [AI_USAGE.md](AI_USAGE.md), and [PLAN.md](PLAN.md). Automated checks exercise fixtures and injected dependencies; live external mailbox delivery and multi-replica deployment are not claimed as verified.

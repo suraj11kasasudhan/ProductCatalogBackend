@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+import type { Store } from 'express-rate-limit';
 import { createApp } from '../src/app.js';
 import { CatalogueService } from '../src/services/catalogue-service.js';
 import { EnquiryService } from '../src/services/enquiry-service.js';
@@ -14,7 +15,7 @@ export const products: Product[] = Array.from({ length: 7 }, (_, index) => ({
   rating: { value: 4.5, count: 20 },
 }));
 
-export function setup(limit = 100) {
+export function setup(limit = 100, enquiryStore?: Store) {
   const source = { list: vi.fn().mockResolvedValue(products) };
   const mailer = { sendEnquiry: vi.fn().mockResolvedValue(undefined) };
   const catalogue = new CatalogueService(source, [5, 4, 3, 2, 1]);
@@ -27,6 +28,7 @@ export function setup(limit = 100) {
       enquiries,
       corsOrigin: 'http://localhost:5173',
       enquiryLimit: limit,
+      enquiryStore,
     }),
   };
 }

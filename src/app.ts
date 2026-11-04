@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import { rateLimit } from 'express-rate-limit';
+import { rateLimit, type Store } from 'express-rate-limit';
 import type { CatalogueService } from './services/catalogue-service.js';
 import type { EnquiryService } from './services/enquiry-service.js';
 import { productRouter } from './routes/products.js';
@@ -14,6 +14,7 @@ interface AppDependencies {
   enquiries: EnquiryService;
   corsOrigin: string;
   enquiryLimit?: number;
+  enquiryStore?: Store;
 }
 
 export function createApp(deps: AppDependencies) {
@@ -32,6 +33,7 @@ export function createApp(deps: AppDependencies) {
     rateLimit({
       windowMs: 15 * 60 * 1000,
       limit: deps.enquiryLimit ?? 10,
+      store: deps.enquiryStore,
       standardHeaders: 'draft-8',
       legacyHeaders: false,
       message: {

@@ -1,11 +1,9 @@
-# Backend implementation plan
+# Backend maintenance plan
 
-Approved scope: implement the Node.js backend in this repository on a feature branch, validate it, and commit the changes. The full exercise also needs a frontend.
+The backend is merged into main. Render currently deploys feat/catalogue-backend. The iOS client lives independently in ProductCatalogiOS.
 
-1. Scaffold Node 24, TypeScript, Express, configuration, lockfile and Docker/Mailpit setup.
-2. Add product source contracts and Fake Store mapping, five curated featured products, category grouping, search and product details.
-3. Add validated enquiries and replaceable SMTP delivery; return confirmation only after recipient acceptance.
-4. Test the critical paths and failure cases. Build the image, start services and inspect an actual delivered Mailpit message.
-5. Document setup, API behavior, assumptions, AI usage and limitations. Commit on `feat/catalogue-backend`.
-
-The architecture stays small: routes → services → product/email adapters. No database or paid services are required. Additional features are listed in DECISIONS.md.
+1. Preserve the public API and small routes → services → contracts/adapters structure.
+2. Keep provider behavior behind ProductSource, ProductLookup and Mailer; use injected infrastructure in tests.
+3. Validate changes with formatting, source/test/script type checks, automated tests and the production build. Run Mailpit smoke testing separately when SMTP integration needs verification.
+4. Keep setup, provider migration, AI attribution and production limitations accurate in README.md, DECISIONS.md, AI_USAGE.md and AGENTS.md.
+5. Add shared rate limiting/proxy configuration, durable enquiries and idempotency only when a deployment requires them. Do not claim these follow-ups are already deployed.

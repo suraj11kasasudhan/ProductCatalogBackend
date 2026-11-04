@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { setup } from './helpers.js';
 
 const enquiry = {
@@ -65,6 +65,21 @@ describe('enquiries', () => {
     await request(app).post('/api/enquiries').send(enquiry).expect(429);
     expect(mailer.sendEnquiry).toHaveBeenCalledTimes(1);
   });
+  it('uses an injected rate-limit store before sending email', async () => {
+    const increment = vi.fn().mockResolvedValue({
+      totalHits: 2,
+      resetTime: new Date(Date.now() + 60000),
+    });
+    const { app, mailer } = setup(1, {
+      increment,
+      decrement: vi.fn(),
+      resetKey: vi.fn(),
+    });
+    await request(app).post('/api/enquiries').send(enquiry).expect(429);
+    expect(increment).toHaveBeenCalledOnce();
+    expect(mailer.sendEnquiry).not.toHaveBeenCalled();
+  });
+
   it('handles malformed JSON and oversized bodies', async () => {
     const { app } = setup();
     await request(app)
